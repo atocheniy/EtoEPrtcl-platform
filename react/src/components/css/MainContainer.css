@@ -1,0 +1,35 @@
+.mainContainer{
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+
+    justify-content: center;
+    align-items: center;
+}
+
+.leftSidebarStack {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.leftSidebarBase {
+    position: absolute;
+    z-index: 10;
+}
+
+.leftSidebarOverlay {
+    position: absolute;
+    z-index: 20;
+}
+
+
+.bg-glow {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+  filter: blur(80px);
+  z-index: 0;
+  pointer-events: none;
+}
