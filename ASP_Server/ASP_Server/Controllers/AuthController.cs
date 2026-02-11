@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ASP_Server.Controllers
 {
@@ -46,6 +47,19 @@ namespace ASP_Server.Controllers
             }
 
             return Unauthorized("Неверный логин или пароль");
+        }
+        
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return NotFound();
+
+            return Ok(new { 
+                email = user.Email, 
+                fullName = user.FullName
+            });
         }
 
         private string GenerateJwtToken(ApplicationUser user)

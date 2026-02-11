@@ -1,26 +1,12 @@
 import { useState } from 'react';
 import {
   Paper,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Typography,
-  Avatar,
-  Divider,
   Button
 } from '@mui/material';
 
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
-import CreateIcon from '@mui/icons-material/Create';
-import { Create } from '@mui/icons-material';
 
 import { AuthService } from '../services/authService';
 

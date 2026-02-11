@@ -41,6 +41,7 @@ import { useNavigate } from 'react-router';
 import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
+import { UserService } from '../services/userService.ts';
 
 const MotionPaper = motion.div;
 
@@ -84,9 +85,14 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
 
   const { masterKey } = useEncryption();
   const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
+  const [userProfile, setUserProfile] = useState({ fullName: 'Загрузка...', email: '' });
 
   useEffect(() => {
     if (masterKey) {
+        UserService.getUser()
+          .then(data => setUserProfile(data))
+          .catch(() => setUserProfile({ fullName: 'Гость', email: 'нет доступа' }));
+
         ProjectService.getProjects().then( async data => {
                         const decryptedProjects = await Promise.all(data.map(async (p: any) => {
                 try {
@@ -357,10 +363,10 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
                 />
                 <Box>
                     <Typography fontWeight={600}>
-                        User Name
+                        {userProfile.fullName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                        admin@role.com
+                        {userProfile.email}
                     </Typography>
                 </Box>
             </Box>
@@ -391,7 +397,7 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
     }}
 >
     <List disablePadding>
-        <ListItemButton sx={{
+        <ListItemButton onClick={() => navigate('/user_profile')} sx={{
         mx: 1,
         my: 1,
         borderRadius: '12px',

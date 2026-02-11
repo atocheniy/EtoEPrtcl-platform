@@ -15,12 +15,12 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 
 
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import SettingsIcon from '@mui/icons-material/Settings';
+// import DashboardIcon from '@mui/icons-material/Dashboard';
+// import AnalyticsIcon from '@mui/icons-material/Analytics';
+// import SettingsIcon from '@mui/icons-material/Settings';
 
 function RightSidebar() {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  // const [selectedIndex, setSelectedIndex] = useState(0);
 
 const [alignment, setAlignment] = React.useState<string | null>('left');
 
@@ -31,11 +31,11 @@ const [alignment, setAlignment] = React.useState<string | null>('left');
     setAlignment(newAlignment);
   };
 
-  const menuItems = [
-    { text: 'Проект 1', icon: <DashboardIcon /> },
-    { text: 'Проект 2', icon: <AnalyticsIcon /> },
-    { text: 'Проект 3', icon: <SettingsIcon /> },
-  ];
+  // const menuItems = [
+    // { text: 'Проект 1', icon: <DashboardIcon /> },
+    // { text: 'Проект 2', icon: <AnalyticsIcon /> },
+    // { text: 'Проект 3', icon: <SettingsIcon /> },
+  // ];
 
   return (
     <Paper

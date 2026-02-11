@@ -49,6 +49,7 @@ import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
 import { $api } from '../api/axios';
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
+import { UserService } from '../services/userService.ts';
 
 const MotionPaper = motion.div;
 
@@ -125,8 +126,14 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
         }
     };
 
+     const [userProfile, setUserProfile] = useState({ fullName: 'Загрузка...', email: '' });
+
   useEffect(() => {
         if (projectId && masterKey) {
+          UserService.getUser()
+                    .then(data => setUserProfile(data))
+                    .catch(() => setUserProfile({ fullName: 'Гость', email: 'нет доступа' }));
+                    
             $api.get<FileItem[]>(`/files/project/${projectId}`)
                 .then(async response => {
                     const decryptedFiles = await Promise.all(response.data.map(async f => {
@@ -399,10 +406,10 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
                 />
                 <Box>
                     <Typography fontWeight={600}>
-                        User Name
+                        {userProfile.fullName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                        admin@role.com
+                        {userProfile.email}
                     </Typography>
                 </Box>
             </Box>

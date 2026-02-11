@@ -3,6 +3,7 @@ import MainContainer from './pages/MainContainer'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import HomePage from './pages/HomePage'
+import UserPage from './pages/UserPage'
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -31,6 +32,10 @@ function AnimatedRoutes() {
                     <Route path="/editor" element={
                             <RequireAuth>
                                 <MainContainer />
+                            </RequireAuth> } />
+                    <Route path='/user_profile' element={
+                            <RequireAuth>
+                                <UserPage />
                             </RequireAuth> } />
                 </Routes>
         </AnimatePresence>

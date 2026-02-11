@@ -17,7 +17,7 @@ import ToolsPanel from '../components/ToolsPanel.tsx';
 //? Services -------------------------------------
 
 import { $api } from '../api/axios';
-import { FileService } from '../services/fileService.ts';
+// import { FileService } from '../services/fileService.ts';
 
 //? Animations -------------------------------------
 
