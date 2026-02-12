@@ -1,9 +1,5 @@
 import { $api } from "../api/axios";
-
-export interface User {
-    email: string;
-    fullName: string;
-}
+import type { User } from "../types/auth";
 
 export const UserService = {
     async getUser() {

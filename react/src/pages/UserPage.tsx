@@ -15,22 +15,12 @@ import { useNavigate } from 'react-router';
 
 import AnimatedPage from '../components/AnimatedPage';
 import { useEncryption } from '../components/context/EncryptionContext';
-import { UserService } from '../services/userService';
 
 function UserPage() {
  const navigate = useNavigate();
   const [twoFactor, setTwoFactor] = useState(false);
 
-  const { masterKey } = useEncryption();
-  const [userProfile, setUserProfile] = useState({ fullName: 'Загрузка...', email: '' });
-
-  useEffect(() => {
-    if (masterKey) {
-        UserService.getUser()
-          .then(data => setUserProfile(data))
-          .catch(() => setUserProfile({ fullName: 'Гость', email: 'нет доступа' }));
-    }
-  }, [masterKey]);
+  const { userData } = useEncryption();
 
   const updateName = () => {
 
@@ -66,8 +56,8 @@ function UserPage() {
               U
             </Avatar>
             <Box textAlign="center">
-              <Typography variant="h5" fontWeight={700}>{userProfile.fullName}</Typography>
-              <Typography variant="body2" color="rgba(255,255,255,0.5)">{userProfile.email}</Typography>
+              <Typography variant="h5" fontWeight={700}>{userData.fullName}</Typography>
+              <Typography variant="body2" color="rgba(255,255,255,0.5)">{userData.email}</Typography>
             </Box>
           </Stack>
 
@@ -79,7 +69,7 @@ function UserPage() {
                   <PersonIcon sx={{ color: 'rgba(255,255,255,0.2)' }} />
                   <Box>
                     <Typography variant="caption" color="rgba(255,255,255,0.4)">Имя</Typography>
-                    <Typography variant="body1">{userProfile.fullName}</Typography>
+                    <Typography variant="body1">{userData.fullName}</Typography>
                   </Box>
                 </Stack>
                 <Button size="small" sx={{ color: '#818cf8', textTransform: 'none' }}>Изменить</Button>
@@ -92,7 +82,7 @@ function UserPage() {
                   <EmailIcon sx={{ color: 'rgba(255,255,255,0.2)' }} />
                   <Box>
                     <Typography variant="caption" color="rgba(255,255,255,0.4)">Почта</Typography>
-                    <Typography variant="body1">{userProfile.email}</Typography>
+                    <Typography variant="body1">{userData.email}</Typography>
                   </Box>
                 </Stack>
                 <Button size="small" sx={{ color: '#818cf8', textTransform: 'none' }}>Изменить</Button>

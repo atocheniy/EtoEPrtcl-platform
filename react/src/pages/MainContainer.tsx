@@ -45,6 +45,8 @@ function MainContainer() {
     const { masterKey, setMasterKey } = useEncryption(); 
     const [isPending, startTransition] = useTransition();
 
+    const { signingKey, setSigningKey } = useEncryption();
+
     //! === Refs ===
     const contentPanelRef = useRef<ContentPanelHandle>(null);
     const contentRef = useRef<string>(''); 
@@ -85,7 +87,7 @@ function MainContainer() {
 
             await $api.put(`/files/${activeFileId}`, payload);
             
-            console.log("Файл и имя успешно перешифрованы и сохранены");
+            console.log("Файл сохранен и подписан цифровым ключом.");
             return true;
         } catch (e) {
             console.error("Ошибка сохранения", e);
@@ -140,18 +142,25 @@ function MainContainer() {
 
     useEffect(() => {
         const tryAutoLogin = async () => {
-            if (!masterKey) { 
-                const savedKey = await DCrypto.loadKeyFromStorage();
-                if (savedKey) {
-                    console.log("Ключ успешно восстановлен.");
-                    setMasterKey(savedKey);
-                } else {
-                    console.error("Ключ не найден.");
-                }
+            if (masterKey && signingKey) return;
+
+            const [savedMaster, savedSigning] = await Promise.all([
+                DCrypto.loadKeyFromStorage("master_key"),
+                DCrypto.loadKeyFromStorage("signing_key")
+            ]);
+
+            if (savedMaster) {
+                // console.log("Master Key восстановлен");
+                setMasterKey(savedMaster);
+            }
+            
+            if (savedSigning) {
+                // console.log("Signing Key восстановлен");
+                setSigningKey(savedSigning);
             }
         };
         tryAutoLogin();
-    }, [masterKey, setMasterKey]);
+    }, []);
 
   return (
     <AnimatedPage>

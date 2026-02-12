@@ -26,7 +26,7 @@ namespace ASP_Server.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterInfo model)
         {
-            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName };
+            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv };
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded)
@@ -42,8 +42,11 @@ namespace ASP_Server.Controllers
 
             if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
             {
-                var token = GenerateJwtToken(user);
-                return Ok(new { token }); 
+                return Ok(new { 
+                    token = GenerateJwtToken(user),
+                    encryptedSigningPrivateKey = user.EncryptedSigningPrivateKey,
+                    signingKeyIv = user.SigningKeyIv
+                }); 
             }
 
             return Unauthorized("Неверный логин или пароль");
@@ -97,6 +100,9 @@ namespace ASP_Server.Controllers
         public string Email { get; set; }
         public string Password { get; set; }
         public string FullName { get; set; }
+        public string SigningPublicKey { get; set; }
+        public string EncryptedSigningPrivateKey { get; set; }
+        public string SigningKeyIv { get; set; }
     }
 
     public class  LoginInfo

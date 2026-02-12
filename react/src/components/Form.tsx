@@ -21,12 +21,19 @@ function Form() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { initKey } = useEncryption();
+    const { initKeysForLogin } = useEncryption();
 
     const handleLogin = async () => {
         try {
-            await AuthService.login({ email, password });
-            await initKey(password, email); 
+            const response = await AuthService.login({ email, password });
+            const { encryptedSigningPrivateKey, signingKeyIv } = response.data;
+
+            await initKeysForLogin(
+                password, 
+                email, 
+                encryptedSigningPrivateKey, 
+                signingKeyIv
+            );
             navigate('/editor');
             
         } catch (err: any) {

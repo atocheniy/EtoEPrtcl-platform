@@ -20,6 +20,7 @@ public class FilesController : ControllerBase
     
     [HttpPost]
     [Authorize]
+    [SignatureRequired]
     public async Task<IActionResult> Create([FromBody] CreateFileDto model)
     {
         var projectExists = _context.Projects.Any(p => p.Id == model.ProjectId);
@@ -44,6 +45,7 @@ public class FilesController : ControllerBase
     
     [HttpPut("{id}")]
     [Authorize]
+    [SignatureRequired]
     public async Task<IActionResult> UpdateFile(Guid id, [FromBody] UpdateFileDto model)
     {
         var file = await _context.Files.FindAsync(id);
@@ -59,6 +61,7 @@ public class FilesController : ControllerBase
     
     [HttpGet("project/{projectId}")]
     [Authorize]
+    [SignatureRequired]
     public IActionResult GetFilesByProject(Guid projectId)
     {
         
@@ -72,6 +75,7 @@ public class FilesController : ControllerBase
     
     [HttpGet("{fileId}")]
     [Authorize]
+    [SignatureRequired]
     public IActionResult GetFileContent(Guid fileId)
     {
         var file = _context.Files.Find(fileId);

@@ -9,5 +9,8 @@ namespace ASP_Server.Models;
 public class ApplicationUser : IdentityUser
 {
     public string? FullName { get; set; }
+    public string? SigningPublicKey { get; set; } 
+    public string? EncryptedSigningPrivateKey { get; set; }
+    public string? SigningKeyIv { get; set; }
 }
 

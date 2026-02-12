@@ -49,7 +49,6 @@ import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
 import { $api } from '../api/axios';
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
-import { UserService } from '../services/userService.ts';
 
 const MotionPaper = motion.div;
 
@@ -94,6 +93,8 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
   const [openDialog, setOpenDialog] = useState(false);
   const navigate = useNavigate();
 
+  const { userData } = useEncryption();
+
    const handleClickOpenDialog = () => {
     setOpenDialog(true);
   };
@@ -126,14 +127,8 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
         }
     };
 
-     const [userProfile, setUserProfile] = useState({ fullName: 'Загрузка...', email: '' });
-
   useEffect(() => {
-        if (projectId && masterKey) {
-          UserService.getUser()
-                    .then(data => setUserProfile(data))
-                    .catch(() => setUserProfile({ fullName: 'Гость', email: 'нет доступа' }));
-                    
+        if (projectId && masterKey) {               
             $api.get<FileItem[]>(`/files/project/${projectId}`)
                 .then(async response => {
                     const decryptedFiles = await Promise.all(response.data.map(async f => {
@@ -149,7 +144,7 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
                 .then(async project => {
                   const name = await DCrypto.decrypt(project.name, project.iv, masterKey);
                 
-                  console.log(project.name);
+                  // console.log(project.name);
                   setProjectName(name);
                 })
                 .catch(err => console.error("Ошибка загрузки проекта:", err));
@@ -178,7 +173,7 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
     const handleLogout = async () => {
-        await DCrypto.clearKeyFromStorage();
+        await DCrypto.clearAllKeys();
         AuthService.logout();
     };
     
@@ -406,10 +401,10 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
                 />
                 <Box>
                     <Typography fontWeight={600}>
-                        {userProfile.fullName}
+                        {userData.fullName}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                        {userProfile.email}
+                        {userData.email}
                     </Typography>
                 </Box>
             </Box>

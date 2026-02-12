@@ -12,6 +12,7 @@ import { AuthService } from '../services/authService';
 
 import { useNavigate } from 'react-router';
 import { useEncryption } from './context/EncryptionContext';
+import { DCrypto } from '../services/cryptoService';
 
 function RegisterForm() {
     const navigate = useNavigate();
@@ -22,7 +23,7 @@ function RegisterForm() {
     const [confirmPass, setConfirmPass] = useState('');
     const [error, setError] = useState('');
 
-    const { initKey } = useEncryption();
+    const { initKeysForRegister } = useEncryption();
     
     const handleRegister = async () => {
         setError('');
@@ -37,8 +38,14 @@ function RegisterForm() {
         }
 
         try {
-            await AuthService.register({ email, password, fullName });
-            await initKey(password, email); 
+            const keys = await initKeysForRegister(password, email);
+
+            await AuthService.register({
+                email, password, fullName,
+                signingPublicKey: keys.publicKey,
+                encryptedSigningPrivateKey: keys.encryptedPrivateKey,
+                signingKeyIv: keys.iv
+            });
             navigate('/editor'); 
         } catch (err: any) {
             console.error(err);

@@ -22,6 +22,7 @@ public class ProjectsController : ControllerBase
 
     [HttpPost]
     [Authorize]
+    [SignatureRequired]
     public async Task<IActionResult> Create([FromBody] CreateProjectDto model)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -55,6 +56,7 @@ public class ProjectsController : ControllerBase
         
     [HttpGet]
     [Authorize]
+    [SignatureRequired]
     public IActionResult GetMyProjects()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -64,6 +66,7 @@ public class ProjectsController : ControllerBase
     
     [HttpGet("{id}")]
     [Authorize]
+    [SignatureRequired]
     public async Task<ActionResult<Project>> GetProject(Guid id)
     {
         var project = await _context.Projects.FindAsync(id);
