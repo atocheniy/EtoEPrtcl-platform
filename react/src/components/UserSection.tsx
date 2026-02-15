@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 import { AuthService } from '../services/authService';
 import { DCrypto } from '../services/cryptoService';
 import { useEncryption } from './context/EncryptionContext';
+import { ColorSettingsDialog } from './ui/ColorSettingsDialog';
 
 const menuAnimation = {
     initial: {
@@ -32,6 +33,8 @@ export const UserSection = () => {
     const open = Boolean(anchorEl);
     const { userData } = useEncryption();
     const navigate = useNavigate();
+
+    const [openColorDialog, setOpenColorDialog] = useState(false);
 
     const handleOpen = (event: MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -130,6 +133,18 @@ export const UserSection = () => {
             }}>
                     <ListItemText primary="Настройки" />
                 </ListItemButton>
+                <ListItemButton onClick={() => setOpenColorDialog(true)} sx={{
+                mx: 1,
+                my: 1,
+                borderRadius: '12px',
+                transition: 'background-color 0.15s ease',
+
+                '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,0.12)',
+                },
+            }}>
+                    <ListItemText primary="Настройки цвета" />
+                </ListItemButton>
                 <ListItemButton sx={{
                 mx: 1,
                 my: 1,
@@ -140,10 +155,12 @@ export const UserSection = () => {
                     backgroundColor: 'rgba(255,255,255,0.12)',
                 },
             }}>
+                
                     <ListItemText primary="Выйти" onClick={() => {handleClose(); handleLogout(); navigate('/login')}} />
                 </ListItemButton>
             </List>
         </Popover>
+        <ColorSettingsDialog open={openColorDialog} onClose={() => setOpenColorDialog(false)} />
         </>
     );
 };

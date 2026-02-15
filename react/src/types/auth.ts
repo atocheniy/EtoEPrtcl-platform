@@ -23,3 +23,16 @@ export interface User{
     email: string;
     fullName: string;
 }
+
+export interface FileItem {
+    id: string;
+    name: string;
+    extension: string;
+    iv: string;
+}
+
+export interface Project {
+    id: string;
+    name: string;
+    iv: string;
+}

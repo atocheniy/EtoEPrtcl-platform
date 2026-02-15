@@ -12,7 +12,6 @@ import { AuthService } from '../services/authService';
 
 import { useNavigate } from 'react-router';
 import { useEncryption } from './context/EncryptionContext';
-import { DCrypto } from '../services/cryptoService';
 
 function RegisterForm() {
     const navigate = useNavigate();

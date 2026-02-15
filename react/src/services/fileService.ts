@@ -1,10 +1,5 @@
 import { $api } from "../api/axios";
-
-interface FileItem {
-    id: string;
-    name: string;
-    extension: string;
-}
+import type { FileItem } from "../types/auth";
 
 export const FileService = {
     async createFile(name: string, projectId: string) {

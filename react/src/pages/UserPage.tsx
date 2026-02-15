@@ -1,12 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { 
   Box, Container, Typography, Avatar, Paper, Stack, 
-  Button, Switch, FormControlLabel, Divider, TextField,
-  IconButton
+  Button, Switch, Divider,
 } from '@mui/material';
-import { motion } from 'framer-motion';
-
-import EditIcon from '@mui/icons-material/Edit';
 import EmailIcon from '@mui/icons-material/Email';
 import PersonIcon from '@mui/icons-material/Person';
 import ShieldIcon from '@mui/icons-material/Shield';
@@ -22,6 +18,7 @@ function UserPage() {
 
   const { userData } = useEncryption();
 
+  /*
   const updateName = () => {
 
   }
@@ -29,6 +26,7 @@ function UserPage() {
   const updateEmail = () => {
     
   }
+  */
 
   const sectionStyle = {
     p: 3,

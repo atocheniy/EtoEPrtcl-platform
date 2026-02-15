@@ -29,11 +29,12 @@ interface TopPanelProps {
     onLeftToggle: () => void;
     isRightOpen: boolean;   
     onRightToggle: () => void;
+    activeFileId: string | null;
     closeFile: () => void;
 }
 
 
-function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftToggle, isRightOpen, onRightToggle, closeFile}: TopPanelProps) {
+function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftToggle, isRightOpen, onRightToggle, activeFileId, closeFile}: TopPanelProps) {
 
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -103,11 +104,11 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
        </Box>
        <Box sx={{ 
     display: 'flex', 
+    flexDirection: 'row',
     alignItems: 'center', 
-    gap: 2, 
+    gap: 1, 
     px: 1.5, 
     py: 0.5,
-    pr: -1,
     borderRadius: '10px',
     transition: '0.2s',
     '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' },
@@ -115,8 +116,9 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
     '&:hover .close-button': { opacity: 1 } ,
     maxWidth: '70%'
 }}>
-      <Typography variant='h6' sx={{textAlign: 'center', maxWidth: '60%', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 'bold'}}>{fileName}</Typography>
-       <Tooltip title={"Закрыть файл"}>
+      <Typography variant='h6' sx={{textAlign: 'center', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 'bold'}}>{fileName}</Typography>
+      {activeFileId ? 
+       (<Tooltip title={"Закрыть файл"}>
             <IconButton className="close-button" onClick={closeFile} size="small"
             sx={{ 
                 mt: 0.1,
@@ -126,9 +128,12 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
             }}>
                <CloseIcon sx={{ fontSize: 16 }}></CloseIcon>
             </IconButton>
-          </Tooltip>
+          </Tooltip>) : (<></>)
+      }
           </Box>
      <Box sx={{ position: 'absolute', right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
+      
+      {activeFileId ? (
       <Tooltip title="Сохранить">
       <IconButton
           onClick={handleSave}
@@ -138,6 +143,8 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
           <SaveIcon /> 
       </IconButton>
     </Tooltip>
+    ) : (<></>)}
+    {activeFileId ? (
      <Tooltip title={`Сменить режим на ${selected ? 'редактирование' : 'чтение'}`}>
         <ToggleButton
         value="check"
@@ -155,6 +162,8 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
         {selected ? <VisibilityIcon /> : <CreateIcon />} 
     </ToggleButton>
     </Tooltip>
+      ) : (<></>)}
+
     <Tooltip title={isRightOpen ? "Скрыть панель" : "Показать панель"}>
             <IconButton 
               onClick={onRightToggle}

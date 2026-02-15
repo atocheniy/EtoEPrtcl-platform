@@ -85,10 +85,10 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
                 zIndex: 20,
             }}
         >
-          <SidebarWrapper title={"Проекты"} 
+          <SidebarWrapper classnames="leftSidebarOverlay" title={"Проекты"} 
           highAction
             children={
-              <List sx={{ flexGrow: 1, px: 2, mt: 1 }}>
+              <List sx={{px: 2, mt: 1 }}>
                 {projects.map((project, index) => (
                   <ListItem key={project.id} disablePadding sx={{ mb: 1 }}>
                     <ListItemButton
@@ -119,7 +119,8 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
             }
             customsx={{
                 bgcolor: 'rgba(10, 10, 10, 0.9)',
-                backdropFilter: "blur(20px) saturate(150%)"
+                backdropFilter: "blur(20px) saturate(150%)",
+                boxShadow: "0 8px 22px rgba(0,0,0,0.3)",
             }}
             >
           </SidebarWrapper>

@@ -17,6 +17,9 @@ interface EncryptionContextType {
     setSigningKey: (key: CryptoKey | null) => void;
     initKeysForRegister: (password: string, email: string) => Promise<{ publicKey: string, encryptedPrivateKey: string, iv: string }>;
     initKeysForLogin: (password: string, email: string, encKey: string, iv: string) => Promise<void>;
+
+    orbColors: [string, string];
+    setOrbColors: React.Dispatch<React.SetStateAction<[string, string]>>;
 }
 
 const EncryptionContext = createContext<EncryptionContextType | null>(null);
@@ -25,6 +28,8 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     const [masterKey, setMasterKey] = useState<CryptoKey | null>(null);
     const [signingKey, setSigningKey] = useState<CryptoKey | null>(null);
     const [userData, setUserData] = useState<User>({ fullName: 'Загрузка...', email: '' });
+
+    const [orbColors, setOrbColors] = useState<[string, string]>(['radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 80%)', 'radial-gradient(circle, rgba(169, 85, 247, 0.15) 0%, transparent 80%)']);
 
     useEffect(() => {
         if (masterKey) {
@@ -74,7 +79,7 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     };
 
     return (
-        <EncryptionContext.Provider value={{ masterKey, signingKey, userData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin}}>
+        <EncryptionContext.Provider value={{ masterKey, signingKey, userData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors}}>
             {children}
         </EncryptionContext.Provider>
     );

@@ -1,10 +1,5 @@
 import { $api } from "../api/axios";
-
-export interface Project {
-    id: string;
-    name: string;
-    iv: string;
-}
+import type { Project } from "../types/auth";
 
 export const ProjectService = {
     async createProject(projectData: { name: string, iv: string }) {

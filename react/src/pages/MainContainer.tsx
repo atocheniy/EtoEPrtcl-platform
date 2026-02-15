@@ -39,7 +39,7 @@ function MainContainer() {
     // const MotionPaper = motion.div;
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [fileContent, setFileContent] = useState<string>('');
-    const [fileName, setFileName] = useState<string>('Файл не выбран');
+    const [fileName, setFileName] = useState<string>('');
     const [activeFileId, setActiveFileId] = useState<string | null>(null);
     const [isProjectSidebarOpen, setIsProjectSidebarOpen] = useState(true);
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -55,6 +55,7 @@ function MainContainer() {
     const showSkeleton = (isPending || manualLoading || isFileLoading) && (isPreviewMode || isWorkingWithPreview);
 
     const { signingKey, setSigningKey } = useEncryption();
+     const { orbColors } = useEncryption();
 
     //! === Refs ===
     const contentPanelRef = useRef<ContentPanelHandle>(null);
@@ -163,7 +164,7 @@ function MainContainer() {
         // console.log("close file");
 
         setActiveFileId(null);
-        setFileName('Файл не выбран');
+        setFileName('');
         setFileContent('');
 
         setIsPreviewMode(false);
@@ -213,7 +214,7 @@ function MainContainer() {
             width: '85vw',  
             height: '85vh',  
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 80%)',
+            background: `radial-gradient(circle, ${orbColors[0]} 0%, transparent 80%)`,
             filter: 'blur(80px)', 
             zIndex: 0,
             pointerEvents: 'none' ,
@@ -228,7 +229,7 @@ function MainContainer() {
             width: '90vw',
             height: '90vh',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(169, 85, 247, 0.15) 0%, transparent 80%)',
+            background: `radial-gradient(circle, ${orbColors[1]} 0%, transparent 80%)`,
             filter: 'blur(80px)',
             zIndex: 0,
             pointerEvents: 'none' ,
@@ -261,7 +262,7 @@ function MainContainer() {
 
         <div style={{display: "flex", flexDirection: "column", flex: 1, position: 'relative', justifyContent: 'center', alignItems: "center"}}>
           <ContentPanel ref={contentPanelRef} isPreviewMode={isPreviewMode} activeFileId={activeFileId} content={fileContent} onChange={handleContentChange} isLoading={showSkeleton} />
-          <TopPanel selected={isPreviewMode} fileName={fileName} isLeftOpen={isLeftSidebarOpen} onLeftToggle={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} isRightOpen={isRightSidebarOpen} onRightToggle={() => setIsRightSidebarOpen(!isRightSidebarOpen)} closeFile={closeFile} 
+          <TopPanel selected={isPreviewMode} fileName={fileName} isLeftOpen={isLeftSidebarOpen} onLeftToggle={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} isRightOpen={isRightSidebarOpen} onRightToggle={() => setIsRightSidebarOpen(!isRightSidebarOpen)} activeFileId={activeFileId} closeFile={closeFile} 
           onToggle={() => {
                 const nextMode = !isPreviewMode;
         
