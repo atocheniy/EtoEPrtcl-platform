@@ -12,6 +12,7 @@ public class File
 
     public string Extension { get; set; } = ".md";
     
+    [Column(TypeName = "longtext")]
     public string? Content { get; set; } 
     
     public string? Iv { get; set; }

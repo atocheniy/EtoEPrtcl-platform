@@ -8,6 +8,22 @@ export const $api = axios.create({
     }
 });
 
+$api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            console.warn("Сессия истекла");
+            
+            localStorage.removeItem('token');
+            DCrypto.clearAllKeys();
+
+            window.location.href = '/login';
+        }
+
+        return Promise.reject(error);
+    }
+);
+
 $api.interceptors.request.use(async (config) => {
     const token = localStorage.getItem('token'); 
     const signingKey = await DCrypto.loadKeyFromStorage("signing_key");

@@ -12,7 +12,8 @@ const openDB = (): Promise<IDBDatabase> => {
 };
 
 
-const base64ToBuffer = (str: string) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+const _base64ToBuffer = (str: string) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+/*
 const bufferToBase64 = (buf: ArrayBuffer | Uint8Array): string => {
     const uint8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
     let binary = '';
@@ -21,8 +22,26 @@ const bufferToBase64 = (buf: ArrayBuffer | Uint8Array): string => {
     }
     return window.btoa(binary);
 };
+*/
+const _bufferToBase64 = (buf: ArrayBuffer | Uint8Array): string => {
+    const uint8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    
+    const CHUNK_SIZE = 0x8000;
+    let binary = '';
+    for (let i = 0; i < uint8.length; i += CHUNK_SIZE) {
+        binary += String.fromCharCode.apply(
+            null, 
+            uint8.subarray(i, i + CHUNK_SIZE) as unknown as number[]
+        );
+    }
+    return window.btoa(binary);
+};
 
 export const DCrypto = {
+
+    bufferToBase64: _bufferToBase64,
+    base64ToBuffer: _base64ToBuffer,
+
     async deriveMasterKey(password: string, salt: string): Promise<CryptoKey> {
         const encoder = new TextEncoder();
         const baseKey = await window.crypto.subtle.importKey(
@@ -53,17 +72,17 @@ export const DCrypto = {
         );
 
         return {
-            content: bufferToBase64(encrypted),
-            iv: bufferToBase64(iv)
+            content: _bufferToBase64(encrypted),
+            iv: _bufferToBase64(iv)
         };
     },
 
     async decrypt(encryptedBase64: string, ivBase64: string, key: CryptoKey): Promise<string> {
         const decoder = new TextDecoder();
         const decrypted = await window.crypto.subtle.decrypt(
-            { name: "AES-GCM", iv: base64ToBuffer(ivBase64) },
+            { name: "AES-GCM", iv: _base64ToBuffer(ivBase64) },
             key,
-            base64ToBuffer(encryptedBase64)
+            _base64ToBuffer(encryptedBase64)
         );
 
         return decoder.decode(decrypted);
@@ -115,16 +134,16 @@ export const DCrypto = {
         );
 
         return {
-            encryptedKey: bufferToBase64(encrypted),
-            iv: bufferToBase64(iv)
+            encryptedKey: _bufferToBase64(encrypted),
+            iv: _bufferToBase64(iv)
         };
     },
 
     async unpackPrivateKey(encryptedKeyStr: string, ivStr: string, masterKey: CryptoKey): Promise<CryptoKey> {
         const decrypted = await window.crypto.subtle.decrypt(
-            { name: "AES-GCM", iv: base64ToBuffer(ivStr) },
+            { name: "AES-GCM", iv: _base64ToBuffer(ivStr) },
             masterKey,
-            base64ToBuffer(encryptedKeyStr)
+            _base64ToBuffer(encryptedKeyStr)
         );
 
         return window.crypto.subtle.importKey(
@@ -139,7 +158,7 @@ export const DCrypto = {
 
     async exportPublicKey(key: CryptoKey): Promise<string> {
         const exported = await window.crypto.subtle.exportKey("spki", key);
-        return bufferToBase64(exported);
+        return _bufferToBase64(exported);
     },
 
     async signData(privateKey: CryptoKey, data: string): Promise<string> {
@@ -149,6 +168,6 @@ export const DCrypto = {
             privateKey,
             encoder.encode(data)
         );
-        return bufferToBase64(signature);
+        return _bufferToBase64(signature);
     }
 };

@@ -67,6 +67,17 @@ namespace ASP_Server
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.Limits.MaxRequestBodySize = 100 * 1024 * 1024;
+            });
+            
+            builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(x =>
+            {
+                x.ValueLengthLimit = int.MaxValue;
+                x.MultipartBodyLengthLimit = int.MaxValue;
+            });
 
             var app = builder.Build();
 

@@ -5,22 +5,9 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CreateIcon from '@mui/icons-material/Create';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';
 import CodeIcon from '@mui/icons-material/Code';
-import { motion } from 'framer-motion';
-import type {Variants} from 'framer-motion';
 
-const MotionBox = motion(Box);
-const orbVariants: Variants = {
-    animate: (i: number) => ({
-        x: i === 1 ? [0, 100, -100, 0] : [0, -80, 80, 0], 
-        y: i === 1 ? [0, -100, 50, 0] : [0, 50, -100, 0],
-        scale: [1, 1.2, 0.8, 1],
-        transition: {
-            duration: i === 1 ? 15 : 18,
-            repeat: Infinity,
-            ease: "linear" as const
-        }
-    })
-};
+import Starfield from '../components/ui/Starfield';
+
 function HomePage() {
     const navigate = useNavigate();
 
@@ -33,43 +20,11 @@ function HomePage() {
 
   return (
     <AnimatedPage>
-       <Box className='mainContainer' sx={{ overflowY: 'auto', position: 'relative', bgcolor: '#080808' }}>
+       <Box className='mainContainer' sx={{ overflowY: 'hide', position: 'relative', bgcolor: '#080808' }}>
         
-       <MotionBox
-                    custom={1}
-                    variants={orbVariants}
-                    animate="animate"
-                    sx={{
-                        position: 'absolute',
-                        top: '10%',
-                        left: '5%',
-                        width: '500px',
-                        height: '500px',
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(99, 102, 241, 0.35) 0%, transparent 70%)',
-                        filter: 'blur(90px)',
-                        zIndex: 0,
-                        pointerEvents: 'none' 
-                    }}
-                />
+         <Starfield />
 
-                <MotionBox
-                    custom={2}
-                    variants={orbVariants}
-                    animate="animate"
-                    sx={{
-                        position: 'absolute',
-                        bottom: '5%',
-                        right: '2%',
-                        width: '600px',
-                        height: '600px',
-                        borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(168, 85, 247, 0.25) 0%, transparent 70%)',
-                        filter: 'blur(100px)',
-                        zIndex: 0,
-                        pointerEvents: 'none' 
-                    }}
-                />
+      
 
         <Container maxWidth="lg" sx={{ pt: 15, pb: 10, position: 'relative', zIndex: 1 }}>
           
@@ -86,7 +41,7 @@ function HomePage() {
                 lineHeight: 1.1
               }}
             >
-              Ваши идеи в <br /> идеальном формате
+              E2EE-платформа для управления базами знаний.
             </Typography>
             
             <Typography 

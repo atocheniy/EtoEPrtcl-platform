@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Paper,
   List,
@@ -42,16 +41,18 @@ const [alignment, setAlignment] = React.useState<string | null>('left');
       elevation={1}
       sx={{
         width: 220, 
+        minWidth: 210,
         m: 1,        
-        ml: 0,          
-        borderRadius: 2,       
+        ml: 0,       
+        borderRadius: 3,       
         height: 'calc(100vh - 16px)', 
         
-        bgcolor: 'background.paper',
+        bgcolor: 'rgb(8, 8, 8)',
         overflow: 'hidden',     
         display: 'flex',
         flexDirection: 'column',
         border: '1px solid rgba(255, 255, 255, 0.08)',
+        zIndex: 1,
       }}
     >
 

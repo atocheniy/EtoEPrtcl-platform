@@ -1,15 +1,6 @@
-import { useState } from 'react';
 import {
   Paper,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Typography,
-  Avatar,
-  Divider,
-  Button
 } from '@mui/material';
 
 import * as React from 'react';
@@ -17,29 +8,32 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import { IconButton, Tooltip } from '@mui/material';
 
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
 import CreateIcon from '@mui/icons-material/Create';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Create } from '@mui/icons-material';
 import SaveIcon from '@mui/icons-material/Save';
 import { Snackbar, Alert } from '@mui/material';
 import Slide from '@mui/material/Slide';
 import type {SlideProps} from '@mui/material/Slide';
 
 import ToggleButton from '@mui/material/ToggleButton';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface TopPanelProps {
     selected: boolean;
     onToggle: () => void;
     fileName: string;
     onSave: () => Promise<boolean>; 
+    isLeftOpen: boolean;
+    onLeftToggle: () => void;
+    isRightOpen: boolean;   
+    onRightToggle: () => void;
+    closeFile: () => void;
 }
 
 
-function TopPanel({ selected, onToggle, fileName, onSave}: TopPanelProps) {
+function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftToggle, isRightOpen, onRightToggle, closeFile}: TopPanelProps) {
 
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -87,66 +81,93 @@ function TopPanel({ selected, onToggle, fileName, onSave}: TopPanelProps) {
         zIndex: '100',
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 6, 
-        bgcolor: '#141414b5',    
-        backdropFilter: "blur(5px) !important",  
+  
+        bgcolor: 'rgba(10, 10, 10, 0.7)',
+        backdropFilter: "blur(5px) saturate(150%)",
+        
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '60px',
-        boxSizing: 'border-box'
+        height: '50px',
+        boxSizing: 'border-box',
+        boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
         
       }}
-    ><Typography variant='h6' sx={{textAlign: 'center', fontWeight: 'bold'}}>{fileName}</Typography>
+    >
+      <Box sx={{ position: 'absolute', left: 16, display: 'flex', alignItems: 'center' }}>
+          <Tooltip title={isLeftOpen ? "Скрыть меню" : "Показать меню"}>
+            <IconButton onClick={onLeftToggle} sx={{ color: 'text.secondary' }}>
+               <MenuIcon />
+            </IconButton>
+          </Tooltip>
+       </Box>
+       <Box sx={{ 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: 2, 
+    px: 1.5, 
+    py: 0.5,
+    pr: -1,
+    borderRadius: '10px',
+    transition: '0.2s',
+    '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' },
+    '& .close-button': { opacity: 0, transition: '0.2s' },
+    '&:hover .close-button': { opacity: 1 } ,
+    maxWidth: '70%'
+}}>
+      <Typography variant='h6' sx={{textAlign: 'center', maxWidth: '60%', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 'bold'}}>{fileName}</Typography>
+       <Tooltip title={"Закрыть файл"}>
+            <IconButton className="close-button" onClick={closeFile} size="small"
+            sx={{ 
+                mt: 0.1,
+                color: '#ffffff',
+                bgcolor: 'rgba(0, 0, 0, 0.1)' ,
+                transition: 'color 0.3s',
+            }}>
+               <CloseIcon sx={{ fontSize: 16 }}></CloseIcon>
+            </IconButton>
+          </Tooltip>
+          </Box>
+     <Box sx={{ position: 'absolute', right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Tooltip title="Сохранить">
+      <IconButton
+          onClick={handleSave}
+          disabled={isSaving}
+          sx={{ color: 'text.secondary' }}
+      >
+          <SaveIcon /> 
+      </IconButton>
+    </Tooltip>
      <Tooltip title={`Сменить режим на ${selected ? 'редактирование' : 'чтение'}`}>
         <ToggleButton
         value="check"
         selected={selected}
         onChange={onToggle}
         sx={{
-            position: 'absolute',
-            right: 16,         
-            
-            borderRadius: '50%', 
-            
-            width: 40,        
-            height: 40,
-            border: 'none',      
-            
-            '&.Mui-selected': {
-
-                color: 'white',
-                '&:hover': {
-                   
-                }
-            },
-            color: 'text.secondary' 
+          borderRadius: '50%',
+          width: 38,
+          height: 38,
+          border: 'none',
+          color: 'text.secondary',
+          '&.Mui-selected': { color: 'white' }
         }}
     >
         {selected ? <VisibilityIcon /> : <CreateIcon />} 
     </ToggleButton>
     </Tooltip>
-    <Tooltip title="Сохранить">
-      <IconButton
-          onClick={handleSave}
-          disabled={isSaving}
-          sx={{
-              position: 'absolute',
-              right: 64,
-              
-              borderRadius: '50%', 
-              
-              width: 40,        
-              height: 40,
-              p: 0,
-              m: 0,
-              border: 'none',      
-              
-              color: 'text.secondary' 
-          }}
-      >
-          <SaveIcon /> 
-      </IconButton>
-    </Tooltip>
+    <Tooltip title={isRightOpen ? "Скрыть панель" : "Показать панель"}>
+            <IconButton 
+              onClick={onRightToggle}
+              sx={{
+                color: 'text.secondary',
+                transform: isRightOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+                transition: '0.3s'
+              }}
+            >
+              <MenuOpenIcon />
+            </IconButton>
+         </Tooltip>
+         </Box>
     </Paper>
     <Snackbar 
         open={openSnackbar} 

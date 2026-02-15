@@ -26,14 +26,10 @@ import { useEffect } from 'react';
 
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
 import CreateIcon from '@mui/icons-material/Create';
-import { Create } from '@mui/icons-material';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+
+import { AnimatePresence } from 'framer-motion';
 
 import {Popover } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -41,7 +37,6 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import { AuthService } from '../services/authService';
 import { ProjectService } from '../services/projectService';
-import { FileService } from '../services/fileService.ts';
 
 import { useNavigate } from 'react-router';
 
@@ -50,7 +45,6 @@ import { $api } from '../api/axios';
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
 
-const MotionPaper = motion.div;
 
 const menuAnimation = {
     initial: {
@@ -84,6 +78,18 @@ interface LeftSidebarFilesProps {
   onBack: () => void;
   onFileSelect: (fileId: string) => void; 
 }
+
+const listVariants = {
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: {
+      delay: i * 0.1,
+    },
+  }),
+  hidden: { opacity: 0, x: -20 },
+  exit: { opacity: 0, x: -10, transition: { duration: 0.1 } }
+};
 
 function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesProps) {
   const { masterKey } = useEncryption();
@@ -192,7 +198,7 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
         borderRadius: 2,       
         height: 'calc(100vh - 16px)', 
         
-        bgcolor: 'background.paper',
+        bgcolor: 'rgb(10, 10, 10)',
         overflow: 'hidden',     
         display: 'flex',
         flexDirection: 'column',
@@ -318,8 +324,9 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
       <Divider variant="fullWidth" />
 
       <List sx={{ flexGrow: 1, px: 2, mt: 1 }}>
+        <AnimatePresence mode="popLayout">
         {files.map((file, index) => (
-          <ListItem key={file.id} disablePadding sx={{ mb: 1 }}>
+          <ListItem key={file.id} disablePadding sx={{ mb: 1 }}  component={motion.li} variants={listVariants} initial="hidden" animate="visible" exit="exit" custom={index} layout>
             <ListItemButton
             disabled={!masterKey}
               selected={selectedIndex === index}
@@ -351,6 +358,7 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect }: LeftSidebarFilesP
             </ListItemButton>
           </ListItem>
         ))}
+        </AnimatePresence>
       </List>
 
       <Divider variant="fullWidth" />

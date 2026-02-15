@@ -1,3 +1,4 @@
+/*
 import type { ContentPanelHandle } from "../components/ContentPanel";
 import type { MarkdownCommand } from "../components/ToolsPanel";
 
@@ -58,3 +59,4 @@ const handleCommand = (command: MarkdownCommand) => {
     }
     return { handleCommand };
 };
+*/

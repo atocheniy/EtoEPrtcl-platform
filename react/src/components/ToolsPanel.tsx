@@ -1,30 +1,8 @@
-import { useState } from 'react';
 import {
   Paper,
-  List,
-  IconButton, Tooltip, Stack,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Avatar,
+  IconButton, Tooltip,
   Divider,
-  Button
 } from '@mui/material';
-
-import * as React from 'react';
-
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
-import CreateIcon from '@mui/icons-material/Create';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Create } from '@mui/icons-material';
 
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
@@ -35,7 +13,6 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import LinkIcon from '@mui/icons-material/Link';
 import ImageIcon from '@mui/icons-material/Image';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import { scale } from 'framer-motion';
 
 export type MarkdownCommand = 'bold' | 'italic' | 'code' | 'quote' | 'ul' | 'ol' | 'link' | 'image' | 'todo';
 
@@ -97,8 +74,7 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
         <Paper
         elevation={1}
         sx={{
-            position: 'absolute', 
-            bottom: 0,
+            
             width: 'auto',
             maxWidth: '800px', 
             m: 1,    
@@ -108,12 +84,13 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 6, 
             bgcolor: '#141414b5',    
-            backdropFilter: "blur(5px) !important",  
+            backdropFilter: "blur(5px) saturate(150%) !important",  
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             height: '60px',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
             
         }}
         >
