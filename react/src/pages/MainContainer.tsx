@@ -29,6 +29,7 @@ import { useEncryption } from '../components/context/EncryptionContext.tsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Box } from '@mui/material';
 
+    const MotionBox = motion(Box);
 
 //* =============================================================================
 //* Main container application
@@ -37,10 +38,12 @@ function MainContainer() {
 
     //! === States ===
     // const MotionPaper = motion.div;
+
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [fileContent, setFileContent] = useState<string>('');
     const [fileName, setFileName] = useState<string>('');
     const [activeFileId, setActiveFileId] = useState<string | null>(null);
+    // const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
     const [isProjectSidebarOpen, setIsProjectSidebarOpen] = useState(true);
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const { masterKey, setMasterKey } = useEncryption(); 
@@ -48,6 +51,7 @@ function MainContainer() {
     const [manualLoading, setManualLoading] = useState(false);
     const [isFileLoading, setIsFileLoading] = useState(false);
     const [isWorkingWithPreview, setIsWorkingWithPreview] = useState(false);
+    const [isProjectSettinsOpen, setIsProjectSettinsOpen] = useState(false);
 
     const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
@@ -55,7 +59,9 @@ function MainContainer() {
     const showSkeleton = (isPending || manualLoading || isFileLoading) && (isPreviewMode || isWorkingWithPreview);
 
     const { signingKey, setSigningKey } = useEncryption();
-     const { orbColors } = useEncryption();
+     const { orbColors, refreshCurrentProjectId, refreshProjects } = useEncryption();
+     const { clearCurrentProjectId } = useEncryption();
+     const { setProjectFiles } = useEncryption();
 
     //! === Refs ===
     const contentPanelRef = useRef<ContentPanelHandle>(null);
@@ -70,8 +76,29 @@ function MainContainer() {
     const handleCommand = (command: MarkdownCommand) => { contentPanelRef.current?.applyCommand(command);};
 
     const handleProjectSelect = (id: string) => {
+        refreshCurrentProjectId(id);
         setSelectedProjectId(id);
         setIsProjectSidebarOpen(false); 
+    };
+
+    const handleCloseProject = () => {
+        clearCurrentProjectId();
+
+        setActiveFileId(null);
+        setFileName('');
+        setFileContent('');
+        activeFileIdRef.current = null;
+        contentRef.current = '';
+
+        setIsProjectSettinsOpen(false);
+        setIsPreviewMode(false);
+
+        setIsProjectSidebarOpen(true);
+    };
+
+    const updateActiveFileName = (newName: string) => {
+        setFileName(newName);
+        fileNameRef.current = newName;
     };
 
     const saveFile = async () => {
@@ -106,6 +133,10 @@ function MainContainer() {
             lastSavedContentRef.current = contentToSave;
 
             await $api.put(`/files/${activeFileId}`, payload);
+
+            setProjectFiles(prev => prev.map(f => 
+                f.id === activeFileId ? { ...f, iv: payload.iv } : f
+            ));
             
             console.log("Файл сохранен и подписан цифровым ключом.");
             return true;
@@ -118,6 +149,7 @@ function MainContainer() {
     const handleFileSelect = async (fileId: string) => {
 
         if (fileId === activeFileId) return;
+        setIsProjectSettinsOpen(false); 
         saveFile();
 
         if (isPreviewMode) setIsWorkingWithPreview(true);
@@ -205,8 +237,11 @@ function MainContainer() {
   return (
     <AnimatedPage>
       <div className='mainContainer mainC'>
-         <Box
-                   
+         <MotionBox
+                   animate={{
+        background: `radial-gradient(circle, ${orbColors[0]} 0%, transparent 80%)`,
+    }}
+    transition={{ duration: 2, ease: "easeInOut" }}
                     sx={{
             position: 'absolute',
             top: '-10%',
@@ -214,14 +249,18 @@ function MainContainer() {
             width: '85vw',  
             height: '85vh',  
             borderRadius: '50%',
-            background: `radial-gradient(circle, ${orbColors[0]} 0%, transparent 80%)`,
+           
             filter: 'blur(80px)', 
             zIndex: 0,
             pointerEvents: 'none' ,
         }}
                 />
 
-                <Box
+                <MotionBox
+                animate={{
+        background: `radial-gradient(circle, ${orbColors[1]} 0%, transparent 80%)`,
+    }}
+    transition={{ duration: 2, ease: "easeInOut" }}
                     sx={{
             position: 'absolute',
             bottom: '-10%',
@@ -229,7 +268,7 @@ function MainContainer() {
             width: '90vw',
             height: '90vh',
             borderRadius: '50%',
-            background: `radial-gradient(circle, ${orbColors[1]} 0%, transparent 80%)`,
+           
             filter: 'blur(80px)',
             zIndex: 0,
             pointerEvents: 'none' ,
@@ -253,15 +292,15 @@ function MainContainer() {
         >    
         <Box sx={{ width: 220, height: 'calc(100vh - 16px)', display: 'flex' }}>
             <div className="leftSidebarStack">
-                <LeftSidebar isOpen={isProjectSidebarOpen} onProjectSelect={handleProjectSelect}/>
-                <LeftSidebarFiles projectId={selectedProjectId} onBack={() => setIsProjectSidebarOpen(true)} onFileSelect={handleFileSelect} />
+                <LeftSidebar isOpen={isProjectSidebarOpen} onProjectSelect={handleProjectSelect} onFileSelect={handleFileSelect} closeFile={closeFile}/>
+                <LeftSidebarFiles projectId={selectedProjectId} onBack={() => setIsProjectSidebarOpen(true)} onFileSelect={handleFileSelect} projectIdSelected={selectedProjectId} isProjectSettinsOpen={isProjectSettinsOpen} setIsProjectSettinsOpen={setIsProjectSettinsOpen} closeFile={closeFile} onRenameSuccess={updateActiveFileName}/>
             </div>
             </Box>
             
         </motion.div>
 
         <div style={{display: "flex", flexDirection: "column", flex: 1, position: 'relative', justifyContent: 'center', alignItems: "center"}}>
-          <ContentPanel ref={contentPanelRef} isPreviewMode={isPreviewMode} activeFileId={activeFileId} content={fileContent} onChange={handleContentChange} isLoading={showSkeleton} />
+          <ContentPanel ref={contentPanelRef} isPreviewMode={isPreviewMode} activeFileId={activeFileId} content={fileContent} onChange={handleContentChange} isLoading={showSkeleton} saveFile={saveFile} isProjectSettinsOpen={isProjectSettinsOpen} setIsProjectSettinsOpen={setIsProjectSettinsOpen} handleCloseProject={handleCloseProject}/>
           <TopPanel selected={isPreviewMode} fileName={fileName} isLeftOpen={isLeftSidebarOpen} onLeftToggle={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} isRightOpen={isRightSidebarOpen} onRightToggle={() => setIsRightSidebarOpen(!isRightSidebarOpen)} activeFileId={activeFileId} closeFile={closeFile} 
           onToggle={() => {
                 const nextMode = !isPreviewMode;

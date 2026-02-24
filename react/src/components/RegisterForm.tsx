@@ -43,7 +43,8 @@ function RegisterForm() {
                 email, password, fullName,
                 signingPublicKey: keys.publicKey,
                 encryptedSigningPrivateKey: keys.encryptedPrivateKey,
-                signingKeyIv: keys.iv
+                signingKeyIv: keys.iv,
+                signSalt: keys.salt
             });
             navigate('/editor'); 
         } catch (err: any) {

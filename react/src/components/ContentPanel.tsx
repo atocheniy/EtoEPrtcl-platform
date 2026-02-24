@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -17,6 +17,8 @@ import 'katex/dist/katex.css';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css'; 
 
+import './css/EditorStyles.css';
+
 import remarkGemoji from 'remark-gemoji';
 
 import remarkBreaks from 'remark-breaks';
@@ -29,6 +31,7 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 import rehypeRaw from 'rehype-raw';
 
+import ImageIcon from '@mui/icons-material/Image';
 import { forwardRef, useImperativeHandle, useRef } from 'react';
 
 import {Skeleton, Stack } from '@mui/material';
@@ -42,6 +45,11 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 
 import Grid from '@mui/material/Grid';
+import { useEncryption } from './context/EncryptionContext';
+import ProjectSettings from './ProjectSettings';
+import { ProjectService } from '../services/projectService';
+import { DCrypto } from '../services/cryptoService';
+import type { Project } from '../types/auth';
 
 export const EditorSkeleton = () => {
   return (
@@ -86,25 +94,40 @@ interface ContentPanelProps {
     onChange: (val: string) => void;
     isLoading?: boolean;
     activeFileId?: string | null; 
+    saveFile: () => Promise<boolean>;
+    isProjectSettinsOpen: boolean;
+    setIsProjectSettinsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    handleCloseProject: () => void;
 }
 const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((props, ref) => { 
-   const { isPreviewMode, content, onChange, isLoading, activeFileId } = props;
+   const { isPreviewMode, content, onChange, isLoading, activeFileId, saveFile, isProjectSettinsOpen, setIsProjectSettinsOpen, handleCloseProject } = props;
    const [value, setValue] = useState(content || "");
+    const valueRef = useRef(value);
    const editorWrapperRef = useRef<HTMLDivElement>(null);
    const editorRef = useRef<any>(null);
+   const [fontSize, setFontSize] = useState(16);
+   const { projectData, masterKey } = useEncryption();
+
+    const {refreshProjects, refreshProjectData} = useEncryption();
+
+   useEffect(() => {
+       valueRef.current = value;
+   }, [value]);
 
    const editorTheme = useMemo(() => EditorView.theme({
         "&": {
             height: "100%",
-            fontSize: "16px",
-            backgroundColor: "transparent !important" 
+            fontSize: `${fontSize}px`,
+            backgroundColor: "transparent !important" ,
+            transition: "font-size 0.1s ease"
         },
         "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
             backgroundColor: "#ffffff !important",
             opacity: "1 !important",
         },
         ".cm-content ::selection": {
-            color: "#000000 !important",
+            color: "#6958ff !important",
+            backgroundColor: "transparent !important",
         },
         "&.cm-focused .cm-selectionLayer .cm-selectionBackground": {
             backgroundColor: "#ffffff !important",
@@ -115,13 +138,14 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
             paddingTop: "90px",
             height: "100% !important",
             overflow: "auto !important", 
+            paddingBottom: "90px",
         },
         ".cm-content": {
             maxWidth: "900px", 
             margin: "0 auto", 
             paddingBottom: "80px",
             background: "rgb(20, 20, 20)",
-            borderRadius: "10px"
+            borderRadius: "10px",
         },
         ".cm-gutters": {
             display: "none"
@@ -129,7 +153,14 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
         "&.cm-focused": {
             outline: "none"
         }
-   }), []);
+   }), [fontSize]);
+
+    const extensions = useMemo(() => [
+        markdown({ base: markdownLanguage }),
+        EditorView.lineWrapping, 
+        githubDark,
+        editorTheme,
+    ], [editorTheme]);
 
     useImperativeHandle(ref, () => ({
         applyCommand: (command: MarkdownCommand) => {
@@ -144,13 +175,19 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
             let insertAfter = "";
 
             switch (command) {
+                case 'H': insertBefore = "# "; insertAfter = ""; break;
                 case 'bold': insertBefore = "**"; insertAfter = "**"; break;
                 case 'italic': insertBefore = "*"; insertAfter = "*"; break;
-                case 'code': insertBefore = "`"; insertAfter = "`"; break;
+                case 'code': insertBefore = "```\n"; insertAfter = "\n```"; break;
                 case 'quote': insertBefore = "> "; break;
                 case 'ul': insertBefore = "- "; break;
                 case 'ol': insertBefore = "1. "; break;
                 case 'todo': insertBefore = "- [ ] "; break;
+                case 'table': 
+                        insertBefore = `| Header 1 | Header 2 |
+| -------- | -------- |
+| Cell 1   | Cell 2   |\n`; 
+                        break;
                 case 'link': insertBefore = "["; insertAfter = "](url)"; break;
                 case 'image': insertBefore = "!["; insertAfter = "](img_url)"; break;
             }
@@ -167,12 +204,118 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
 
     useEffect(() => { setValue(content || ""); }, [content]);
 
-     const handleChange = (val: string | undefined) => {
+       useEffect(() => {
+       const element = editorWrapperRef.current;
+       if (!element) return;
+
+       const handleWheel = (e: WheelEvent) => {
+           if (e.ctrlKey) {
+               e.preventDefault(); 
+
+               if (e.deltaY < 0) {
+                   setFontSize((prev) => Math.min(prev + 1, 40));
+               } else {
+                   setFontSize((prev) => Math.max(prev - 1, 10));
+               }
+           }
+       };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+
+                console.log("Сохранение файла:", activeFileId);
+                saveFile(); 
+            }
+        };
+
+       element.addEventListener('wheel', handleWheel, { passive: false });
+       element.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            element.removeEventListener('wheel', handleWheel);
+            element.removeEventListener('keydown', handleKeyDown);
+        };
+   }, [activeFileId, isLoading]);
+
+   const toggleMarkdownCheckbox = useCallback((targetIndex: number) => {
+        const currentText = valueRef.current;
+        const lines = currentText.split('\n');
+        
+        let matchCount = 0;
+        let inCodeBlock = false;
+        
+        const newLines = lines.map(line => {
+             const codeBlockMatch = line.trim().match(/^(`{3,}|~{3,})/);
+             if (codeBlockMatch) {
+                 inCodeBlock = !inCodeBlock;
+                 return line;
+             }
+             if (inCodeBlock) return line;
+             const checkboxRegex = /^(\s*>*\s*[-*+]\s+)\[([ xX])\](.*)/;
+             const match = line.match(checkboxRegex);
+             
+             if (match) {
+                 if (matchCount === targetIndex) {
+                     const isChecked = match[2] !== ' ';
+                     const newChar = isChecked ? ' ' : 'x';
+                     matchCount++;
+                     return `${match[1]}[${newChar}]${match[3]}`;
+                 }
+                 matchCount++;
+             }
+             return line;
+        });
+        
+        const newValue = newLines.join('\n');
+        if (newValue !== currentText) {
+            handleChange(newValue);
+        }
+    }, []);
+
+  const mdxComponents = useMemo(() => ({
+        table: ({ children }: any) => (
+            <div className="table-container">
+                <table>{children}</table>
+            </div>
+        ),
+        input: (props: any) => {
+            if (props.type === 'checkbox') {
+                return (
+                    <input 
+                        {...props} 
+                        checked={!!props.checked}
+                        disabled={false} 
+                        readOnly 
+                        style={{ cursor: 'pointer', zIndex: 10, position: 'relative' }} 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const container = editorWrapperRef.current;
+                            if (!container) return;
+                            const allCheckboxes = Array.from(container.querySelectorAll('.wmde-markdown input[type="checkbox"]'));
+                            const index = allCheckboxes.indexOf(e.target as HTMLInputElement);
+                            
+                            if (index !== -1) {
+                                toggleMarkdownCheckbox(index);
+                            }
+                        }}
+                    />
+                );
+            }
+            return <input {...props} />;
+        }
+    }), [activeFileId, toggleMarkdownCheckbox]);
+
+     
+
+     const handleChange = useCallback((val: string | undefined) => {
         const newValue = val || '';
         setValue(newValue);
         onChange(newValue);
-    };
+    }, [onChange]);
     
+    const isImageContent = content.startsWith('data:image/');
+
   return (
     <>
         <Paper
@@ -187,9 +330,15 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
             borderRadius: 3,       
             height: 'calc(100vh - 16px)',
             display: 'flex',
+            position: 'relative',
             
-            bgcolor: 'rgb(20, 20, 20, 0.7)',
-            border: '1px solid rgb(27, 27, 27)'
+            background: `linear-gradient(to bottom, 
+      rgb(20, 20, 20) 0px, 
+      rgb(20, 20, 20) 50px, 
+      rgba(20, 20, 20, 0.7) 50px, 
+      rgba(20, 20, 20, 0.7) 100%)`,
+            border: '1px solid rgb(27, 27, 27)',
+            overflow: 'hidden'
         }}
         >
             
@@ -211,16 +360,83 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
         )}
       </AnimatePresence>
 
-{activeFileId ?  
-           ( <div ref={editorWrapperRef} data-color-mode="dark" style={{ width: '100%', height: "100%", opacity: isLoading ? 0 : 1, flex: 1, minHeight: 0, transition: 'opacity 0.3s ease'}}>
+    {isProjectSettinsOpen ? (
+            <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        width: '100%', 
+        height: '100%',
+        overflowY: 'auto'
+    }}>
+        {projectData.id === "123" ? (
+            <EditorSkeleton />
+        ) : (
+            <ProjectSettings 
+                projectData={projectData as Project} 
+                onClose={() => {
+                    setIsProjectSettinsOpen(false); 
+                }} 
+                onSave={ async (updatedData) => {
+                    if (!masterKey) return;
+
+                     try {
+                        const encrypted = await DCrypto.encrypt(updatedData.name, masterKey);
+
+                        await ProjectService.updateProject({
+                            id: updatedData.id,
+                            name: encrypted.content,
+                            iv: encrypted.iv,
+                            isPublic: updatedData.isPublic,
+                            priority: updatedData.priority,
+                            status: updatedData.status
+                        });
+
+                        await refreshProjects();
+                        await refreshProjectData();
+                        setIsProjectSettinsOpen(false);
+                    } catch (error) {
+                        console.error("Не удалось обновить настройки проекта:", error);
+                    }
+                }}
+                onDelete={async (id) => {
+                    try {
+                        await ProjectService.deleteProject(id);
+                        await refreshProjects(); 
+                        
+                        handleCloseProject();
+                        setIsProjectSettinsOpen(false);
+
+                    } catch (error) {
+                        console.error("Ошибка при удалении проекта:", error);
+                    }
+                }}
+            />
+        )}
+    </Box>
+    ) : activeFileId ?  
+           ( <div key={activeFileId} ref={editorWrapperRef} data-color-mode="dark" style={{ width: '100%', height: "100%", opacity: isLoading ? 0 : 1, flex: 1, minHeight: 0, transition: 'opacity 0.3s ease', fontSize: `${fontSize}px` }}>
+
     {isPreviewMode ? (
     
+    isImageContent ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', p: 2 }}>
+            <img 
+                src={value} 
+                alt="Просмотр" 
+                style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: '12px', objectFit: 'contain' }} 
+            />
+        </Box>
+    ) : (
             <MDEditor
+                key={`preview-${activeFileId}`}
                 value={value} 
                 height="100%"
                 minHeight={500}
       preview={"preview"}
        previewOptions={{
+        components: mdxComponents,
                             remarkPlugins: [
                                 remarkGfm,    
                                 remarkMath,    
@@ -242,25 +458,27 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
         border: 'none',             
         boxShadow: 'none',
         height: "100%",
+        fontSize: `${fontSize}px`
       }}
       visibleDragbar={false}
       hideToolbar={true} 
       textareaProps={{
         placeholder: 'Введите текст...'
       }}
-                        />
+                        />)
             ) : (
+                isImageContent ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'white', opacity: 0.5 }}>
+            <ImageIcon sx={{ fontSize: 64, mb: 2 }} />
+            <Typography>Это изображение. Переключитесь в режим превью, чтобы посмотреть его.</Typography>
+        </Box>
+    ) : (
                 <CodeMirror
                     value={value}
                     ref={editorRef}
                     height="100%"
                     theme={githubDark}
-                    extensions={[
-                        markdown({ base: markdownLanguage }),
-                        EditorView.lineWrapping, 
-                        githubDark,
-                        editorTheme
-                    ]}
+                    extensions={extensions}
                     onChange={handleChange}
                     basicSetup={{
                         lineNumbers: false,
@@ -270,61 +488,12 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
                     }}
                     style={{ height: '100%' }}
                 />
+    )
             )}
     <style>{`
-            .w-md-editor, 
-  .w-md-editor-content, 
-  .w-md-editor-bar, 
-  .w-md-editor-preview,
-  .wmde-markdown {
-      background-color: transparent !important;
-      
-  }
-
-      
-      ::-webkit-scrollbar { 
-        width: 8px;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background-color: #363636ff;    
-        border-radius: 8px;    
-      }
-
-      .w-md-editor-text {
-                            max-width: 900px;
-                            margin: 0 auto; 
-                            width: 100%;    
-                            padding-top: 90px;
-                            padding-bottom: 80px;
-                        }
-
-                         .w-md-editor-preview .wmde-markdown {
-                           content-visibility: auto;
-  contain-intrinsic-size: 1px 5000px;
-                            max-width: 900px;
-                            width: 100%;
-                            margin: 0 auto; 
-                            padding-top: 90px;
-                            padding-bottom: 80px;
-                            font-family: Inter Variable, SF Pro Display, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans;
-                        }
-      .markdown-alert .markdown-alert-title { color: inherit; }
-                        .wmde-markdown table { width: 100%; border-collapse: collapse; }
-
-                        .cm-scroller::-webkit-scrollbar { 
-        width: 8px;
-    }
-
-    .cm-scroller::-webkit-scrollbar-thumb {
-        background-color: #363636ff;    
-        border-radius: 8px;    
-    }
-
-    .wmde-markdown {
- 
-}
-
+            .w-md-editor-preview .wmde-markdown {
+                font-size: ${fontSize}px !important;
+            }
     `}</style>
   </div>) : (<Box sx={{ 
         display: 'flex', 
@@ -415,7 +584,9 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
     return (
         prevProps.content === nextProps.content &&
         prevProps.isPreviewMode === nextProps.isPreviewMode &&
-        prevProps.isLoading === nextProps.isLoading
+        prevProps.isLoading === nextProps.isLoading &&
+        prevProps.activeFileId === nextProps.activeFileId &&
+        prevProps.isProjectSettinsOpen === nextProps.isProjectSettinsOpen
     );
 });
 

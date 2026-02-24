@@ -4,6 +4,7 @@ using ASP_Server.DTOs;
 using ASP_Server.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace ASP_Server.Controllers;
 
@@ -32,7 +33,7 @@ public class FilesController : ControllerBase
             ProjectId = model.ProjectId,
             ParentId = model.ParentId,
             Extension = Path.GetExtension(model.Name) == "" ? ".md" : Path.GetExtension(model.Name),
-            Content = "",
+            Content = model.Content,
             Iv = model.Iv, 
             IsFolder = false
         };
@@ -43,20 +44,63 @@ public class FilesController : ControllerBase
         return Ok(file);
     }
     
+    [HttpDelete("{id}")]
+    [Authorize]
+    [SignatureRequired]
+    public async Task<IActionResult> DeleteFile(Guid id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        var file = await _context.Files
+            .Include(f => f.Project)
+            .FirstOrDefaultAsync(f => f.Id == id && f.Project.UserId == userId);
+
+        if (file == null)
+        {
+            return NotFound("Файл не найден или доступ запрещен");
+        }
+        
+        _context.Files.Remove(file);
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Файл успешно удален" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "Ошибка при удалении файла");
+        }
+    }
+    
     [HttpPut("{id}")]
     [Authorize]
     [SignatureRequired]
     public async Task<IActionResult> UpdateFile(Guid id, [FromBody] UpdateFileDto model)
     {
-        var file = await _context.Files.FindAsync(id);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        var file = await _context.Files
+            .Include(f => f.Project)
+            .FirstOrDefaultAsync(f => f.Id == id && f.Project.UserId == userId);
         if (file == null) return NotFound("Файл не найден");
+        
+        if (model.Name != null) file.Name = model.Name;
+        if (model.Extension != null) file.Extension = model.Extension;
+        
+        if (model.Content != null) file.Content = model.Content;
+        if (model.Iv != null) file.Iv = model.Iv;
+        if (model.ParentId != null) file.ParentId = model.ParentId;
 
-        file.Name = model.Name; 
-        file.Content = model.Content;
-        file.Iv = model.Iv;
-
-        await _context.SaveChangesAsync();
-        return Ok(new { message = "Сохранено" });
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Файл обновлен успешно" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "Ошибка при сохранении");
+        }
     }
     
     [HttpGet("project/{projectId}")]
@@ -82,5 +126,20 @@ public class FilesController : ControllerBase
         if (file == null) return NotFound();
 
         return Ok(new { file.Id, file.Name, file.Content, file.Iv });
+    }
+    
+    [HttpGet("all")]
+    [Authorize]
+    [SignatureRequired] 
+    public async Task<IActionResult> GetAllUserFiles()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        var allFiles = await _context.Files
+            .Where(f => f.Project.UserId == userId)
+            .Select(f => new { f.Id, f.Name, f.Iv, f.ProjectId })
+            .ToListAsync();
+
+        return Ok(allFiles);
     }
 }

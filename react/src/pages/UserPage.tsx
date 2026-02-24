@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { 
   Box, Container, Typography, Avatar, Paper, Stack, 
   Button, Switch, Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import PersonIcon from '@mui/icons-material/Person';
@@ -11,22 +17,59 @@ import { useNavigate } from 'react-router';
 
 import AnimatedPage from '../components/AnimatedPage';
 import { useEncryption } from '../components/context/EncryptionContext';
+import { textFieldStyle, whiteSolidButton } from '../components/css/sx';
+import { UserService } from '../services/userService';
+import type { UpdateName } from '../types/auth';
+
+type EditMode = 'name' | 'email' | 'password' | null;
 
 function UserPage() {
- const navigate = useNavigate();
+  const navigate = useNavigate();
   const [twoFactor, setTwoFactor] = useState(false);
 
   const { userData } = useEncryption();
+  const [loading, setLoading] = useState(false);
 
-  /*
-  const updateName = () => {
+  const [editMode, setEditMode] = useState<EditMode>(null);
+  const [inputValue, setInputValue] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  }
+  const { orbColors } = useEncryption();
 
-  const updateEmail = () => {
-    
-  }
-  */
+  const { refreshUserData } = useEncryption();
+
+  const handleOpenEdit = (mode: EditMode, currentVal: string = '') => {
+    setEditMode(mode);
+    setInputValue(mode === 'password' ? '' : currentVal);
+    setConfirmPassword('');
+  };
+
+  const handleClose = () => {
+    setEditMode(null);
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      console.log(`Сохранение для ${editMode}:`, inputValue);
+      if(editMode == 'name'){
+        UserService.changeName({ newName: inputValue });
+      }
+      else if(editMode == 'email'){
+        UserService.changeEmail({ newEmail: inputValue });
+      }
+      else if(editMode == 'password'){
+         await new Promise(res => setTimeout(res, 1000));
+      }
+
+      await refreshUserData();
+      handleClose();
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+    }
+  };
 
   const sectionStyle = {
     p: 3,
@@ -50,8 +93,8 @@ function UserPage() {
           </Button>
 
           <Stack alignItems="center" spacing={2} sx={{ mb: 6 }}>
-            <Avatar sx={{ width: 100, height: 100, bgcolor: '#818cf8', fontSize: '2rem' }}>
-              U
+            <Avatar sx={{ width: 100, height: 100, bgcolor: '#ffffff', fontSize: '2rem' }}>
+              {userData.fullName.toUpperCase().substring(0, 2)}
             </Avatar>
             <Box textAlign="center">
               <Typography variant="h5" fontWeight={700}>{userData.fullName}</Typography>
@@ -70,7 +113,7 @@ function UserPage() {
                     <Typography variant="body1">{userData.fullName}</Typography>
                   </Box>
                 </Stack>
-                <Button size="small" sx={{ color: '#818cf8', textTransform: 'none' }}>Изменить</Button>
+                <Button onClick={() => handleOpenEdit('name', userData.fullName)} size="small" sx={{ color: orbColors[0].replace(/[\d.]+\)$/g, '1)'), textTransform: 'none' }}>Изменить</Button>
               </Stack>
               
               <Divider sx={{ bgcolor: 'rgba(255,255,255,0.05)' }} />
@@ -83,7 +126,7 @@ function UserPage() {
                     <Typography variant="body1">{userData.email}</Typography>
                   </Box>
                 </Stack>
-                <Button size="small" sx={{ color: '#818cf8', textTransform: 'none' }}>Изменить</Button>
+                <Button onClick={() => handleOpenEdit('email', userData.email)} size="small" sx={{ color: orbColors[0].replace(/[\d.]+\)$/g, '1)'), textTransform: 'none' }}>Изменить</Button>
               </Stack>
             </Stack>
           </Paper>
@@ -99,7 +142,7 @@ function UserPage() {
                     <Typography variant="caption" color="rgba(255,255,255,0.4)"></Typography>
                   </Box>
                 </Stack>
-                <Button size="small" sx={{ color: '#818cf8', textTransform: 'none' }}>Сменить</Button>
+                <Button onClick={() => handleOpenEdit('password')} size="small" sx={{ color: orbColors[0].replace(/[\d.]+\)$/g, '1)'), textTransform: 'none' }}>Сменить</Button>
               </Stack>
 
               <Divider sx={{ bgcolor: 'rgba(255,255,255,0.05)' }} />
@@ -115,13 +158,76 @@ function UserPage() {
                   checked={twoFactor} 
                   onChange={(e) => setTwoFactor(e.target.checked)}
                   sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': { color: '#818cf8' },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#818cf8' }
+                    '& .MuiSwitch-switchBase.Mui-checked': { color: orbColors[0].replace(/[\d.]+\)$/g, '1)') },
+                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#3a3a3a' }
                   }}
                 />
               </Stack>
             </Stack>
           </Paper>
+
+          <Dialog 
+            open={Boolean(editMode)} 
+            onClose={handleClose}
+            PaperProps={{
+              sx: {
+                bgcolor: 'rgb(35, 35, 35)',
+                backgroundImage: 'none',
+                borderRadius: '20px',
+                width: '100%',
+                maxWidth: '400px',
+                p: 2,
+                border: '1px solid rgba(255,255,255,0.1)'
+              }
+            }}
+          >
+            <DialogTitle sx={{ color: 'white', fontWeight: 700 }}>
+              {editMode === 'name' && 'Изменить имя'}
+              {editMode === 'email' && 'Изменить почту'}
+              {editMode === 'password' && 'Смена пароля'}
+            </DialogTitle>
+            <DialogContent>
+              <Stack spacing={2} sx={{ mt: 1 }}>
+                <TextField
+                  autoFocus
+                  fullWidth
+                  label={editMode === 'password' ? 'Новый пароль' : 'Новое значение'}
+                  type={editMode === 'password' ? 'password' : 'text'}
+                  variant="outlined"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  sx={textFieldStyle}
+                  disabled={loading}
+                />
+                {editMode === 'password' && (
+                  <TextField
+                    fullWidth
+                    label="Подтвердите пароль"
+                    type="password"
+                    variant="outlined"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    sx={textFieldStyle}
+                    disabled={loading}
+                    error={inputValue !== confirmPassword && confirmPassword.length > 0}
+                  />
+                )}
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button onClick={handleClose} sx={{ color: 'rgba(255,255,255,0.5)', textTransform: 'none' }}>
+                Отмена
+              </Button>
+              <Button 
+                onClick={handleSave} 
+                variant="contained" 
+                disabled={loading || !inputValue || (editMode === 'password' && inputValue !== confirmPassword)}
+                sx={{ ...whiteSolidButton, minWidth: '100px' }}
+              >
+                {loading ? <CircularProgress size={20} color="inherit" /> : 'Сохранить'}
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Box sx={{ mt: 6, textAlign: 'center' }}>
             <Button color="error" sx={{ textTransform: 'none', opacity: 0.6, '&:hover': { opacity: 1 } }}>

@@ -82,6 +82,14 @@ const [alignment, setAlignment] = React.useState<string | null>('left');
         <Typography sx={{m: 2, mt: 0}}>1. Тег 1</Typography>
         <Typography sx={{m: 2, mt: 0}}>2. Тег 2</Typography>
       </List>
+
+      <Divider variant="fullWidth" />
+
+       <Typography variant='h6' sx={{m: 2, fontWeight: 'bold'}}>Ссылки</Typography>
+      <List>
+        <Typography sx={{m: 2, mt: 0}}>1. Ссылка 1</Typography>
+        <Typography sx={{m: 2, mt: 0}}>2. Ссылка 2</Typography>
+      </List>
     </Paper>
   );
 }

@@ -2,6 +2,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Stack, Button, Typog
 import { RgbaStringColorPicker } from 'react-colorful';
 import { useEncryption } from '../context/EncryptionContext';
 import { whiteOutlinedButton, whiteSolidButton } from '../css/sx';
+import { UserService } from '../../services/userService';
 
 interface ColorSettingsDialogProps {
     open: boolean;
@@ -14,6 +15,15 @@ const DEFAULT_COLOR_2 = 'rgba(169, 85, 247, 0.15)';
 export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps) => {
     const { orbColors, setOrbColors } = useEncryption();
     const [color1, color2] = orbColors;
+
+    const handleApply = async () => {
+        try {
+            await UserService.updateColors(color1, color2);
+            onClose();
+        } catch (e) {
+            console.error("Не удалось сохранить цвета в БД", e);
+        }
+    };
 
     const handleReset = () => {
         setOrbColors([DEFAULT_COLOR_1, DEFAULT_COLOR_2]);
@@ -82,7 +92,7 @@ export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps)
                 </Button>
 
                 <Button 
-                    onClick={onClose} 
+                    onClick={handleApply} 
                     variant="contained" 
                     sx={whiteSolidButton}
                 >

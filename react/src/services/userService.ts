@@ -1,9 +1,21 @@
 import { $api } from "../api/axios";
-import type { User } from "../types/auth";
+import type { UpdateEmail, UpdateName, User } from "../types/auth";
 
 export const UserService = {
     async getUser() {
         const response = await $api.get<User>('/auth/me');
         return response.data; 
     },
+
+    async changeName(data: UpdateName) {
+        return $api.post('/auth/change-name', data);
+    },
+
+    async changeEmail(data: UpdateEmail) {
+        return $api.post('/auth/change-email', data);
+    },
+
+    async updateColors(color1: string, color2: string) {
+        return await $api.patch('/auth/colors', { color1, color2 });
+    }
 };

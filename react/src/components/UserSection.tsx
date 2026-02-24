@@ -63,21 +63,22 @@ export const UserSection = () => {
                     borderRadius: '20px',
                     cursor: 'pointer',
                     transition: 'background 0.2s',
+                    maxWidth: '100%', 
                     '&:hover': {
                         backgroundColor: 'action.hover',
                     },
                 }}
             >
                 <Avatar
-                    alt="User"
+                    alt={userData.fullName.toUpperCase()}
                     src="/static/images/avatar/1.jpg"
-                    sx={{ width: 48, height: 48 }}
-                />
-                <Box>
-                    <Typography fontWeight={600}>
+                    sx={{ width: 48, height: 48, flexShrink: 0, bgcolor: '#ffffff', }}
+                >{userData.fullName.toUpperCase().substring(0, 2)}</Avatar>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography fontWeight={600} noWrap>
                         {userData.fullName}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }} title={userData.email}>
                         {userData.email}
                     </Typography>
                 </Box>

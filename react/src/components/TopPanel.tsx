@@ -19,6 +19,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface TopPanelProps {
     selected: boolean;
@@ -116,7 +117,19 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
     '&:hover .close-button': { opacity: 1 } ,
     maxWidth: '70%'
 }}>
-      <Typography variant='h6' sx={{textAlign: 'center', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 'bold'}}>{fileName}</Typography>
+      <AnimatePresence mode="wait">
+                    <motion.div
+                        key={fileName}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                    >
+                        <Typography variant="h6" sx={{textAlign: 'center', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 'bold'}}>
+                            {fileName}
+                        </Typography>
+                    </motion.div>
+                </AnimatePresence>
       {activeFileId ? 
        (<Tooltip title={"Закрыть файл"}>
             <IconButton className="close-button" onClick={closeFile} size="small"

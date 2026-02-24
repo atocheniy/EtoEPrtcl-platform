@@ -11,13 +11,19 @@ export const $api = axios.create({
 $api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && error.response.status === 401) {
+        const isAuthRequest = error.config.url.includes('/auth/login') || 
+                              error.config.url.includes('/auth/register');
+
+         if (error.response && error.response.status === 401 && !isAuthRequest) {
             console.warn("Сессия истекла");
             
             localStorage.removeItem('token');
             DCrypto.clearAllKeys();
 
-            window.location.href = '/login';
+            if (!window.location.pathname.includes('/login') && 
+                !window.location.pathname.includes('/register')) {
+                window.location.href = '/login';
+            }
         }
 
         return Promise.reject(error);

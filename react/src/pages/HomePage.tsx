@@ -14,8 +14,7 @@ function HomePage() {
     const features = [
     { icon: <CreateIcon />, title: "Управление проектами", desc: "Удобная разметка с мгновенным превью. Интерфейс не перегружен." },
     { icon: <CloudQueueIcon />, title: "Облачное хранилище", desc: "Облачная синхронизация позволяет работать над проектами с любого устройства в любое время." },
-    { icon: <CodeIcon />, title: "Защита корпоративного уровня", desc: "E2EE-платформа с асимметричной подписью запросов." },
-    // { icon: <CodeIcon />, title: "Поддержка кода", desc: "Поддержка GFM, подсветка синтаксиса и поддержка формул LaTeX." }
+    { icon: <CodeIcon />, title: "Защита шифованием на стороне клиента", desc: "E2EE-платформа с асимметричной подписью запросов." },
   ];
 
   return (
@@ -28,7 +27,6 @@ function HomePage() {
 
         <Container maxWidth="lg" sx={{ pt: 15, pb: 10, position: 'relative', zIndex: 1 }}>
           
-          {/* CARDS SECTION */}
           <Stack spacing={4} alignItems="center" textAlign="center">
             <Typography 
               variant="h1" 
@@ -41,7 +39,7 @@ function HomePage() {
                 lineHeight: 1.1
               }}
             >
-              E2EE-платформа для управления базами знаний.
+              Платформа для управления проектами
             </Typography>
             
             <Typography 
@@ -78,7 +76,6 @@ function HomePage() {
             </Stack>
           </Stack>
 
-          {/* FEATURES SECTION */}
           <Grid container spacing={4} sx={{ mt: 15 }}>
             {features.map((f, i) => (
               <Grid size={{ xs: 12, md: 4 }} key={i}>
@@ -112,10 +109,9 @@ function HomePage() {
           </Grid>
           
 
-          {/* FOOTER */}
           <Box sx={{ mt: 20, textAlign: 'center', opacity: 0.3 }}>
              <Typography variant="caption">
-                © 2024 YourProject Name. Built with React & ASP.NET Core
+               123
              </Typography>
           </Box>
 

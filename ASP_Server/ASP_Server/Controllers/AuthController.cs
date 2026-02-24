@@ -6,6 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using ASP_Server.Data;
+using ASP_Server.DTOs;
 using Microsoft.AspNetCore.Authorization;
 
 namespace ASP_Server.Controllers
@@ -16,21 +18,22 @@ namespace ASP_Server.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _config;
+        private readonly ApplicationDbContext _context;
 
-        public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config)
+        public AuthController(UserManager<ApplicationUser> userManager, IConfiguration config, ApplicationDbContext context)
         {
             _userManager = userManager;
             _config = config;
+            _context = context;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterInfo model)
         {
-            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv };
+            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv, SignSalt = model.SignSalt };
             var result = await _userManager.CreateAsync(user, model.Password);
 
-            if (result.Succeeded)
-                return Ok(new { message = "Регистрация успешна" });
+            if (result.Succeeded) return Ok(new { message = "Регистрация успешна" });
 
             return BadRequest(result.Errors);
         }
@@ -45,11 +48,80 @@ namespace ASP_Server.Controllers
                 return Ok(new { 
                     token = GenerateJwtToken(user),
                     encryptedSigningPrivateKey = user.EncryptedSigningPrivateKey,
-                    signingKeyIv = user.SigningKeyIv
+                    signingKeyIv = user.SigningKeyIv,
+                    salt = user.SignSalt
                 }); 
             }
 
             return Unauthorized("Неверный логин или пароль");
+        }
+        
+        [HttpPatch("colors")]
+        [Authorize]
+        public async Task<IActionResult> UpdateColors([FromBody] UpdateColorsDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.Users.FindAsync(userId);
+    
+            if (user == null) return NotFound();
+
+            user.OrbColor1 = model.Color1;
+            user.OrbColor2 = model.Color2;
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+        
+        [HttpPost("change-name")]
+        [Authorize]
+        [SignatureRequired]
+        public async Task<IActionResult> ChangeName([FromBody] UpdateNameDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null) return NotFound("Пользователь не найден");
+
+            user.FullName = model.NewName;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded) return Ok(new { message = "Имя успешно обновлено", fullName = user.FullName });
+            return BadRequest(result.Errors);
+        }
+
+
+        [HttpPost("change-email")]
+        [Authorize]
+        [SignatureRequired]
+        public async Task<IActionResult> ChangeEmail([FromBody] UpdateEmailDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null) return NotFound("Пользователь не найден");
+            
+            var existingUser = await _userManager.FindByEmailAsync(model.NewEmail);
+            if (existingUser != null && existingUser.Id != userId) return BadRequest("Данная почта уже используется другим пользователем");
+            
+            user.Email = model.NewEmail;
+            user.UserName = model.NewEmail; 
+            
+            user.NormalizedEmail = model.NewEmail.ToUpper();
+            user.NormalizedUserName = model.NewEmail.ToUpper();
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                var newToken = GenerateJwtToken(user);
+                return Ok(new { 
+                    message = "Почта обновлена", 
+                    token = newToken,
+                    email = user.Email 
+                });
+            }
+
+            return BadRequest(result.Errors);
         }
         
         [HttpGet("me")]
@@ -61,7 +133,9 @@ namespace ASP_Server.Controllers
 
             return Ok(new { 
                 email = user.Email, 
-                fullName = user.FullName
+                fullName = user.FullName,
+                orbColor1 = user.OrbColor1,
+                orbColor2 = user.OrbColor2
             });
         }
 
@@ -103,11 +177,22 @@ namespace ASP_Server.Controllers
         public string SigningPublicKey { get; set; }
         public string EncryptedSigningPrivateKey { get; set; }
         public string SigningKeyIv { get; set; }
+        public string SignSalt { get; set; }
     }
 
     public class  LoginInfo
     {
         public string Email { get; set; }
         public string Password { get; set; }
+    }
+    
+    public class UpdateNameDto
+    {
+        public string NewName { get; set; } = string.Empty;
+    }
+
+    public class UpdateEmailDto
+    {
+        public string NewEmail { get; set; } = string.Empty;
     }
 }

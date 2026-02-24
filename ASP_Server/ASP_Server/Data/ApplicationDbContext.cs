@@ -1,4 +1,5 @@
-﻿using ASP_Server.Data;
+﻿using System.Text.Json;
+using ASP_Server.Data;
 using ASP_Server.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -20,6 +21,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        
+        builder.Entity<Project>()
+            .Property(p => p.Status)
+            .HasConversion<string>();
+        
+        builder.Entity<Project>()
+            .Property(p => p.Priority)
+            .HasConversion<string>();
         
         /*
         var encryptionConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<string, string>(

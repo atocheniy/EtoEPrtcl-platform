@@ -7,8 +7,18 @@ export const FileService = {
         return response.data; 
     },
 
-    async updateFileContent(id: string, content: string) {
-        const response = await $api.put(`/files/${id}`, { content });
+    async deleteFile(id: string) {
+        const response = await $api.delete(`/files/${id}`);
+        return response.data;
+    },
+
+    async updateFileMetadata(id: string, name: string, extension: string, iv: string) {
+        const response = await $api.put(`/files/${id}`, { name, extension, iv });
+        return response.data;
+    },
+
+    async updateFileContent(id: string, content: string, iv: string) {
+        const response = await $api.put(`/files/${id}`, { content, iv });
         return response.data;
     },
     

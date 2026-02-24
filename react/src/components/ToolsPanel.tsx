@@ -13,8 +13,10 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import LinkIcon from '@mui/icons-material/Link';
 import ImageIcon from '@mui/icons-material/Image';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import BackupTableIcon from '@mui/icons-material/BackupTable';
+import AlignHorizontalLeftIcon from '@mui/icons-material/AlignHorizontalLeft';
 
-export type MarkdownCommand = 'bold' | 'italic' | 'code' | 'quote' | 'ul' | 'ol' | 'link' | 'image' | 'todo';
+export type MarkdownCommand = 'H' | 'bold' | 'italic' | 'code' | 'quote' | 'ul' | 'ol' | 'link' | 'image' | 'todo' | 'table';
 
 interface ToolsPanelProps {
     onCommand: (command: MarkdownCommand) => void;
@@ -94,7 +96,13 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
             
         }}
         >
-          <Tooltip title="Жирный" {...tooltipProps}>
+        <Tooltip title="Заголовок" {...tooltipProps}>
+            <IconButton sx={buttonStyle} onClick={() => onCommand('H')}>
+                <AlignHorizontalLeftIcon />
+            </IconButton>
+        </Tooltip>
+
+        <Tooltip title="Жирный" {...tooltipProps}>
             <IconButton sx={buttonStyle} onClick={() => onCommand('bold')}>
                 <FormatBoldIcon />
             </IconButton>
@@ -129,6 +137,12 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
         <Tooltip title="Чек-лист" {...tooltipProps}>
             <IconButton sx={buttonStyle} onClick={() => onCommand('todo')}>
                 <CheckBoxIcon />
+            </IconButton>
+        </Tooltip>
+
+         <Tooltip title="Таблица" {...tooltipProps}>
+            <IconButton sx={buttonStyle} onClick={() => onCommand('table')}>
+                <BackupTableIcon />
             </IconButton>
         </Tooltip>
 

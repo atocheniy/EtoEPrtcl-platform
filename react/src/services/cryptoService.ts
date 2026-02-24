@@ -1,3 +1,5 @@
+import type { User } from "../types/auth";
+import { UserService } from "./userService";
 
 const DB_NAME = "CryptoDB";
 const STORE_NAME = "keys";
@@ -62,11 +64,11 @@ export const DCrypto = {
         );
     },
 
-    async encrypt(text: string, key: CryptoKey) {
+    async encrypt(text: string, key: CryptoKey, existingIv?: Uint8Array) {
         const encoder = new TextEncoder();
-        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+        const iv = existingIv || window.crypto.getRandomValues(new Uint8Array(12));
         const encrypted = await window.crypto.subtle.encrypt(
-            { name: "AES-GCM", iv },
+            { name: "AES-GCM", iv: (iv as unknown) as BufferSource  },
             key,
             encoder.encode(text)
         );
@@ -111,6 +113,15 @@ export const DCrypto = {
         tx.objectStore(STORE_NAME).delete("master_key");
         tx.objectStore(STORE_NAME).delete("signing_key");
         return new Promise((res) => (tx.oncomplete = res));
+    },
+
+    async generateUniqueSalt(length: number = 16): Promise<string> {
+        const array = new Uint8Array(length);
+        window.crypto.getRandomValues(array);
+
+        return Array.from(array)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
     },
 
     async generateSigningKeyPair(): Promise<CryptoKeyPair> {

@@ -1,32 +1,44 @@
-import {useState, useEffect} from'react';
-import {List,ListItem,ListItemButton,ListItemIcon,ListItemText, TextField, Button,Dialog,DialogActions,DialogContent,DialogContentText,DialogTitle} from '@mui/material';
+import {useState, useEffect, useMemo} from'react';
+import {List,ListItem,ListItemButton,ListItemIcon,ListItemText, TextField, Button,Dialog,DialogActions,DialogContent,DialogContentText,DialogTitle, Typography} from '@mui/material';
 
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CreateIcon from '@mui/icons-material/Create';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ProjectService } from '../services/projectService';
 import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
 import { SidebarWrapper } from './SidebarWrapper.tsx';
+import { listVariants, type FileItem } from '../types/auth.ts';
+import $api from '../api/axios.ts';
 
 const MotionPaper = motion.div;
+
+
 
 interface LeftSidebarProps {
     isOpen: boolean;
     onProjectSelect: (id: string) => void;
+    onFileSelect: (fileId: string) => void; 
+    closeFile: () => void;
 }
 
-function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
+function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSidebarProps) {
 
   const [openDialog, setOpenDialog] = useState(false);
   const handleClickOpenDialog = () => {setOpenDialog(true);};
   const handleCloseDialog = () => {setOpenDialog(false);};
+  const [searchField, setSearchField] = useState("");
 
-  const { masterKey } = useEncryption();
-  const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const { masterKey, projects, refreshProjects } = useEncryption();
+  // const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
+  // const [projectIdSelected, setProjectIdSelected] = 
+  const [allFilesForGraph, setAllFilesForGraph] = useState<FileItem[]>([]);
+  // const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
+  /*
   useEffect(() => {
     if (masterKey) {
         ProjectService.getProjects().then( async data => {
@@ -42,6 +54,7 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
         }).catch(err => console.error(err));
     }
   }, [masterKey]);
+  */
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -58,15 +71,45 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
                 iv: encrypted.iv
             });
             
-            setProjects(prev => [...prev, { ...newProject, name: projectName }]);
-            
+            //setProjects(prev => [...prev, { ...newProject, name: projectName }]);
+            await refreshProjects(); 
             onProjectSelect(newProject.id); 
-            
             handleCloseDialog();
         } catch (error) {
             console.error(error);
         }
   };
+
+  const loadGlobalGraph = async () => {
+    if (!masterKey) return;
+    
+    try {
+      const response = await $api.get<FileItem[]>('/files/all');
+      
+      const decryptedFiles = await Promise.all(response.data.map(async f => {
+        try {
+          const name = await DCrypto.decrypt(f.name, f.iv, masterKey);
+          return { ...f, name };
+        } catch {
+          return { ...f, name: "Ошибка" };
+        }
+      }));
+      
+      setAllFilesForGraph(decryptedFiles);
+    } catch (e) {
+      console.error("Ошибка загрузки глобального графа", e);
+    }
+  };
+
+  const changeSearchField = (event: any) => {
+    setSearchField(event.target.value);
+  }
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) =>
+      project.name.toLowerCase().includes(searchField.toLowerCase())
+    );
+  }, [projects, searchField]);
 
   return (
     <MotionPaper
@@ -76,7 +119,7 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
                 scaleX: isOpen ? 1 : 0.95
             }}
             transition={{
-                duration: 1,
+                duration: 0.8,
                 ease: [0.4, 0, 0.2, 1] 
             }}
             style={{
@@ -85,17 +128,18 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
                 zIndex: 20,
             }}
         >
-          <SidebarWrapper classnames="leftSidebarOverlay" title={"Проекты"} 
+          <SidebarWrapper classnames="leftSidebarOverlay" title={"Проекты"} files={allFilesForGraph} onFileSelect={onFileSelect} projects={projects} onOpenGraph={loadGlobalGraph} setSelectedId={setSelectedFileId} closeFile={closeFile}
           highAction
             children={
               <List sx={{px: 2, mt: 1 }}>
-                {projects.map((project, index) => (
-                  <ListItem key={project.id} disablePadding sx={{ mb: 1 }}>
+                <AnimatePresence mode="popLayout">
+                {filteredProjects.map((project, index) => (
+                  <ListItem key={project.id} disablePadding sx={{ mb: 1 }} component={motion.li} variants={listVariants} initial="hidden" animate="visible" exit="exit" custom={index} layout>
                     <ListItemButton
-                      selected={selectedIndex === index}
+                      selected={selectedId === project.id}
                       onClick={() => {
                           onProjectSelect(project.id);
-                          setSelectedIndex(index);
+                          setSelectedId(project.id);
                       }}
                       sx={{ borderRadius: 3,'&.Mui-selected': {bgcolor: 'primary.light', color: 'primary.contrastText','&:hover': { bgcolor: 'white',}, '& .MuiListItemIcon-root': { color: 'inherit',}},
                       }}
@@ -107,10 +151,16 @@ function LeftSidebar({ isOpen, onProjectSelect }: LeftSidebarProps) {
                     </ListItemButton>
                   </ListItem>
                 ))}
+                {filteredProjects.length === 0 && searchField && (
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', display: 'block', mt: 2 }}>
+                    Ничего не найдено
+                  </Typography>
+                )}
+                </AnimatePresence>
               </List> 
             } 
             topAction={
-               <TextField sx={{'& .MuiInputBase-input': { color: 'white' }, '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' }, '& .MuiInputLabel-root.Mui-focused': { color: '#fff' }, '& .MuiOutlinedInput-root': { borderRadius: '15px', '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' }, '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' }, '&.Mui-focused fieldset': { borderColor: 'white' }, }, }} id="outlined-basic" label="Поиск..." variant="outlined" />
+               <TextField onChange={changeSearchField} value={searchField} sx={{'& .MuiInputBase-input': { color: 'white' }, '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' }, '& .MuiInputLabel-root.Mui-focused': { color: '#fff' }, '& .MuiOutlinedInput-root': { borderRadius: '15px', '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' }, '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' }, '&.Mui-focused fieldset': { borderColor: 'white' }, }, }} id="outlined-basic" label="Поиск..." variant="outlined" />
             } 
             bottomAction={
               <Button variant="contained" fullWidth startIcon={<CreateIcon />} onClick={handleClickOpenDialog} sx={{...whiteSolidButton, p:1.5}}>
