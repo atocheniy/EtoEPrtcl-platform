@@ -31,7 +31,7 @@ export const UserSection = () => {
 
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
-    const { userData } = useEncryption();
+    const { userData, logout } = useEncryption(); 
     const navigate = useNavigate();
 
     const [openColorDialog, setOpenColorDialog] = useState(false);
@@ -45,8 +45,8 @@ export const UserSection = () => {
     };
 
     const handleLogout = async () => {
-        await DCrypto.clearAllKeys();
-        AuthService.logout();
+        logout(); 
+        // AuthService.logout();
     };
     
 
@@ -110,7 +110,7 @@ export const UserSection = () => {
             }}
         >
             <List disablePadding>
-                <ListItemButton onClick={() => navigate('/user_profile')} sx={{
+                <ListItemButton onClick={() => {handleClose(); navigate('/user_profile')}} sx={{
                 mx: 1,
                 my: 1,
                 borderRadius: '12px',
@@ -134,7 +134,7 @@ export const UserSection = () => {
             }}>
                     <ListItemText primary="Настройки" />
                 </ListItemButton>
-                <ListItemButton onClick={() => setOpenColorDialog(true)} sx={{
+                <ListItemButton onClick={() => {handleClose(); setOpenColorDialog(true)}} sx={{
                 mx: 1,
                 my: 1,
                 borderRadius: '12px',

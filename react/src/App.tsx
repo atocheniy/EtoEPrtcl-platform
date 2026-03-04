@@ -11,6 +11,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation  } from 'react-rout
 import { RequireAuth } from './components/RequireAuth';
 import { RequireUnAuth } from './components/RequireUnAuth';
 import { EncryptionProvider } from './components/context/EncryptionContext'
+import { AppThemeWrapper } from './components/context/AppThemeWrapper'
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -47,9 +48,11 @@ function App() {
   return (
     <>
       <EncryptionProvider>
-        <Router>
-            <AnimatedRoutes />
-        </Router>
+        <AppThemeWrapper>
+            <Router>
+                <AnimatedRoutes />
+            </Router>
+        </AppThemeWrapper>
       </EncryptionProvider>
     </>
   )

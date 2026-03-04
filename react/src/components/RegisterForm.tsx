@@ -12,6 +12,8 @@ import { AuthService } from '../services/authService';
 
 import { useNavigate } from 'react-router';
 import { useEncryption } from './context/EncryptionContext';
+import App from '../App';
+import { ApplicationTheme } from '../types/auth';
 
 function RegisterForm() {
     const navigate = useNavigate();
@@ -44,7 +46,8 @@ function RegisterForm() {
                 signingPublicKey: keys.publicKey,
                 encryptedSigningPrivateKey: keys.encryptedPrivateKey,
                 signingKeyIv: keys.iv,
-                signSalt: keys.salt
+                signSalt: keys.salt,
+                theme: ApplicationTheme.Auto
             });
             navigate('/editor'); 
         } catch (err: any) {

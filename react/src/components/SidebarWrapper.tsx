@@ -12,6 +12,7 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ListIcon from '@mui/icons-material/List';
 import SettingsApplicationsIcon from '@mui/icons-material/SettingsApplications';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useEncryption } from './context/EncryptionContext';
 
 interface SidebarWrapperProps {
     classnames?: string;
@@ -39,6 +40,8 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const openMenu = Boolean(anchorEl);
     const MotionTypography = motion(Typography);
+
+    const { orbColors } = useEncryption();
 
     const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -163,13 +166,13 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
                 }}
             >
                 <MenuItem onClick={handleSelectGraph} sx={{ gap: 1.5, py: 1, mx: 0.5, borderRadius: '10px', }}>
-                    <AccountTreeIcon fontSize="small" sx={{ opacity: 0.7, color: '#818cf8' }} />
+                    <AccountTreeIcon fontSize="small" sx={{ opacity: 0.7,  color: `${orbColors[1].replace(/[\d.]+\)$/g, '0.8)')} !important` }} />
                     <Typography variant="body2">Граф знаний</Typography>
                 </MenuItem>
                 {projectIdSelected ? 
                 ( 
                 <MenuItem onClick={openProjectSettings} sx={{ gap: 1.5, py: 1, mt: 0.5, mx: 0.5, borderRadius: '10px', }}>
-                    <SettingsApplicationsIcon fontSize="small" sx={{ opacity: 0.7, color: '#818cf8' }} />
+                    <SettingsApplicationsIcon fontSize="small" sx={{ opacity: 0.7,  color: `${orbColors[1].replace(/[\d.]+\)$/g, '0.8)')} !important` }} />
                     <Typography variant="body2">Настройки проекта</Typography>
                 </MenuItem>
                 ) : (null)}

@@ -1,4 +1,5 @@
 import { $api } from "../api/axios";
+import { DCrypto } from "../services/cryptoService";
 
 import type { LoginInfo, RegisterInfo, AuthResponse } from "../types/auth"; 
 
@@ -16,7 +17,8 @@ export const AuthService = {
         return response;
     },
 
-    logout() {
+    async logout() {
         localStorage.removeItem('token');
+        await DCrypto.clearAllKeys();
     }
 };

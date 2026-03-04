@@ -8,4 +8,5 @@ public class CreateFileDto
     public string Iv { get; set; } = string.Empty;
     public Guid? ParentId { get; set; }
     
+    public bool IsFolder { get; set; }
 }

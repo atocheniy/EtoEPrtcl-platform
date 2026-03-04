@@ -44,6 +44,8 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
 
+import { githubLight } from '@uiw/codemirror-theme-github';
+
 import Grid from '@mui/material/Grid';
 import { useEncryption } from './context/EncryptionContext';
 import ProjectSettings from './ProjectSettings';
@@ -106,9 +108,7 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
    const editorWrapperRef = useRef<HTMLDivElement>(null);
    const editorRef = useRef<any>(null);
    const [fontSize, setFontSize] = useState(16);
-   const { projectData, masterKey } = useEncryption();
-
-    const {refreshProjects, refreshProjectData} = useEncryption();
+   const { projectData, masterKey, isDarkMode, orbColors, refreshProjects, refreshProjectData } = useEncryption();
 
    useEffect(() => {
        valueRef.current = value;
@@ -126,7 +126,7 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
             opacity: "1 !important",
         },
         ".cm-content ::selection": {
-            color: "#6958ff !important",
+            color: `${orbColors[1].replace(/[\d.]+\)$/g, '0.8)')} !important`,
             backgroundColor: "transparent !important",
         },
         "&.cm-focused .cm-selectionLayer .cm-selectionBackground": {
@@ -158,7 +158,7 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
     const extensions = useMemo(() => [
         markdown({ base: markdownLanguage }),
         EditorView.lineWrapping, 
-        githubDark,
+        isDarkMode ? githubDark : githubLight, 
         editorTheme,
     ], [editorTheme]);
 
@@ -204,7 +204,7 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
 
     useEffect(() => { setValue(content || ""); }, [content]);
 
-       useEffect(() => {
+    useEffect(() => {
        const element = editorWrapperRef.current;
        if (!element) return;
 
@@ -335,10 +335,10 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
             background: `linear-gradient(to bottom, 
       rgb(20, 20, 20) 0px, 
       rgb(20, 20, 20) 50px, 
-      rgba(20, 20, 20, 0.7) 50px, 
+      rgba(20, 20, 20, 0.7) 51px, 
       rgba(20, 20, 20, 0.7) 100%)`,
             border: '1px solid rgb(27, 27, 27)',
-            overflow: 'hidden'
+            overflow: 'hidden',
         }}
         >
             
@@ -513,25 +513,25 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
             {[
                 { 
                     title: 'Редактор', 
-                    desc: 'Полноценная поддержка Markdown с мгновенным превью.', 
+                    desc: 'Полноценная поддержка Markdown с просмотром.', 
                     icon: <DescriptionIcon sx={{ color: '#818cf8' }} />,
                     color: 'rgba(129, 140, 248, 0.1)'
                 },
                 { 
                     title: 'Безопасность', 
-                    desc: 'Ваши данные зашифрованы ключом AES-256 прямо в браузере.', 
+                    desc: 'Данные зашифрованы ключом AES-256 в браузере.', 
                     icon: <ShieldIcon sx={{ color: '#4ade80' }} />,
                     color: 'rgba(74, 222, 128, 0.1)'
                 },
                 { 
                     title: 'Проекты', 
-                    desc: 'Организуйте файлы в иерархические структуры и делитесь ими.', 
+                    desc: 'Возможность организовать файлы в иерархические структуры.', 
                     icon: <AutoAwesomeIcon sx={{ color: '#fbbf24' }} />,
                     color: 'rgba(251, 191, 36, 0.1)'
                 },
                 { 
                     title: 'Клавиши', 
-                    desc: 'Используйте Ctrl+S для сохранения и Ctrl+Alt+P для превью.', 
+                    desc: 'Использование Ctrl+S для сохранения и Ctrl+Alt+P для просмотра.', 
                     icon: <KeyboardIcon sx={{ color: '#f87171' }} />,
                     color: 'rgba(248, 113, 113, 0.1)'
                 }

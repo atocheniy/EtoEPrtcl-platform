@@ -141,13 +141,18 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
                           onProjectSelect(project.id);
                           setSelectedId(project.id);
                       }}
-                      sx={{ borderRadius: 3,'&.Mui-selected': {bgcolor: 'primary.light', color: 'primary.contrastText','&:hover': { bgcolor: 'white',}, '& .MuiListItemIcon-root': { color: 'inherit',}},
+                      sx={{ borderRadius: 3, pl: 1,'&.Mui-selected': {bgcolor: 'primary.light', color: 'primary.contrastText','&:hover': { bgcolor: 'white',}, '& .MuiListItemIcon-root': { color: 'inherit',}},
                       }}
                     >
-                      <ListItemIcon sx={{ minWidth: 40 }}>
+                      <ListItemIcon sx={{ minWidth: 35 }}>
                         <DashboardIcon />
                       </ListItemIcon>
-                      <ListItemText primary={project.name} primaryTypographyProps={{ fontWeight: 'medium' }} />
+                      <ListItemText primary={project.name} primaryTypographyProps={{ 
+                  fontWeight: 'medium',
+                  noWrap: true,       
+                  title: project.name,
+                  fontSize: '0.9rem',
+              }} />
                     </ListItemButton>
                   </ListItem>
                 ))}

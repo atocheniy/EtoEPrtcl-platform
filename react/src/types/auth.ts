@@ -11,6 +11,7 @@ export interface RegisterInfo {
     encryptedSigningPrivateKey: string; 
     signingKeyIv: string; 
     signSalt: string;
+    theme: ApplicationTheme;
 }
 
 export interface AuthResponse {
@@ -27,7 +28,15 @@ export interface User{
     salt: string;
     orbColor1: string;  
     orbColor2: string;  
+    theme: ApplicationTheme;
 }
+
+export const ApplicationTheme = {
+    Light: 'Light',
+    Dark: 'Dark',
+    Auto: 'Auto'
+} as const;
+export type ApplicationTheme = typeof ApplicationTheme[keyof typeof ApplicationTheme];
 
 export interface UpdateName {
     newName: string;
@@ -42,6 +51,8 @@ export interface FileItem {
     name: string;
     extension: string;
     iv: string;
+    parentId: string | null;
+    isFolder: boolean;
 }
 
 export interface Project {

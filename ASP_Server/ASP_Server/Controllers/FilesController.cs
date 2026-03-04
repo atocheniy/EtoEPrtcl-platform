@@ -35,7 +35,7 @@ public class FilesController : ControllerBase
             Extension = Path.GetExtension(model.Name) == "" ? ".md" : Path.GetExtension(model.Name),
             Content = model.Content,
             Iv = model.Iv, 
-            IsFolder = false
+            IsFolder = model.IsFolder,
         };
 
         _context.Files.Add(file);
@@ -111,7 +111,7 @@ public class FilesController : ControllerBase
         
         var files = _context.Files
             .Where(f => f.ProjectId == projectId)
-            .Select(f => new { f.Id, f.Name, f.IsFolder, f.Extension, f.Iv }) 
+            .Select(f => new { f.Id, f.Name, f.IsFolder, f.Extension, f.Iv, f.ParentId }) 
             .ToList();
                             
         return Ok(files);

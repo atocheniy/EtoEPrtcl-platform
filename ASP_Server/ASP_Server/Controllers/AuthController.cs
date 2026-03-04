@@ -30,7 +30,7 @@ namespace ASP_Server.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterInfo model)
         {
-            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv, SignSalt = model.SignSalt };
+            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv, SignSalt = model.SignSalt, Theme = model.Theme};
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded) return Ok(new { message = "Регистрация успешна" });
@@ -68,6 +68,21 @@ namespace ASP_Server.Controllers
             user.OrbColor1 = model.Color1;
             user.OrbColor2 = model.Color2;
 
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [HttpPatch("theme")]
+        [Authorize]
+        public async Task<IActionResult> UpdateTheme([FromBody] UpdateThemeDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.Users.FindAsync(userId);
+            
+            if (user == null) return NotFound();
+
+            user.Theme = model.Theme;
+            
             await _context.SaveChangesAsync();
             return Ok();
         }
@@ -135,7 +150,8 @@ namespace ASP_Server.Controllers
                 email = user.Email, 
                 fullName = user.FullName,
                 orbColor1 = user.OrbColor1,
-                orbColor2 = user.OrbColor2
+                orbColor2 = user.OrbColor2,
+                theme = user.Theme,
             });
         }
 
@@ -157,11 +173,13 @@ namespace ASP_Server.Controllers
             var issuer = _config["Jwt:Site"];
             var audience = _config["Jwt:Site"];
 
+            var expiryInDays = Convert.ToDouble(_config["Jwt:ExpiryInDays"] ?? "30");
+            
             var token = new JwtSecurityToken(
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.Now.AddDays(1),
+                expires: DateTime.UtcNow.AddDays(expiryInDays),
                 signingCredentials: creds
             );
 
@@ -178,6 +196,8 @@ namespace ASP_Server.Controllers
         public string EncryptedSigningPrivateKey { get; set; }
         public string SigningKeyIv { get; set; }
         public string SignSalt { get; set; }
+        
+        public ApplicationTheme  Theme { get; set; }
     }
 
     public class  LoginInfo
@@ -194,5 +214,10 @@ namespace ASP_Server.Controllers
     public class UpdateEmailDto
     {
         public string NewEmail { get; set; } = string.Empty;
+    }
+    
+    public class UpdateThemeDto
+    {
+        public ApplicationTheme Theme { get; set; } = ApplicationTheme.Auto;
     }
 }

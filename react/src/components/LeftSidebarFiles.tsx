@@ -1,5 +1,5 @@
 import {useMemo, useRef, useState} from'react';
-import {List, ListItem, ListItemButton, ListItemIcon, ListItemText, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography, IconButton} from '@mui/material';
+import {List, ListItem, ListItemButton, ListItemIcon, ListItemText, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography, IconButton, Divider, Stack} from '@mui/material';
 
 import DescriptionIcon from '@mui/icons-material/Description';
 import ImageIcon from '@mui/icons-material/Image';
@@ -25,6 +25,7 @@ import { SidebarWrapper } from './SidebarWrapper.tsx';
 import { listVariants, type FileItem } from '../types/auth.ts';
 import GraphView from './ui/GraphView.tsx';
 
+import CreateNewFolderIcon from '@mui/icons-material/ArrowDownward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
@@ -32,6 +33,37 @@ import MenuItem from '@mui/material/MenuItem';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { FileService } from '../services/fileService.ts';
+
+import FolderIcon from '@mui/icons-material/Folder';
+import { FileTreeItem } from './FileTreeItem.tsx';
+
+const buildFileTree = (items: FileItem[]) => {
+    const map = new Map<string, any>();
+    const roots: any[] = [];
+
+    items.forEach(item => {
+        map.set(item.id, { ...item, children: [] });
+    });
+
+    items.forEach(item => {
+        const node = map.get(item.id);
+        if (item.parentId && map.has(item.parentId)) {
+            map.get(item.parentId).children.push(node);
+        } else {
+            roots.push(node);
+        }
+    });
+
+    const sortNodes = (nodes: any[]) => {
+        nodes.sort((a, b) => (b.isFolder ? 1 : 0) - (a.isFolder ? 1 : 0));
+        nodes.forEach(node => {
+            if (node.children.length > 0) sortNodes(node.children);
+        });
+        return nodes;
+    };
+
+    return sortNodes(roots);
+};
 
 interface LeftSidebarFilesProps {
   projectId: string | null;
@@ -50,6 +82,8 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect, projectIdSelected, 
   // const [files, setFiles] = useState<FileItem[]>([]);
   // const [projectName, setProjectName] = useState<string>('Загрузка...'); 
   const [openDialog, setOpenDialog] = useState(false);
+  const [openFolderDialog, setOpenFolderDialog] = useState(false);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   // const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchField, setSearchField] = useState("");
@@ -59,8 +93,35 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect, projectIdSelected, 
 
   const [openRenameDialog, setOpenRenameDialog] = useState(false);
   const [newFileName, setNewFileName] = useState("");
+  const { orbColors } = useEncryption();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [createParentId, setCreateParentId] = useState<string | null>(null);
+
+  const [createAnchorEl, setCreateAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleOpenCreateMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+      setCreateAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseCreateMenu = () => {
+      setCreateAnchorEl(null);
+  };
+
+  const [expanded, setExpanded] = useState<string[]>([]);
+
+  const toggleFolder = (id: string) => {
+      setExpanded(prev => 
+          prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]
+      );
+  };
+
+  const handleOpenGlobalCreate = (asFolder: boolean) => {
+    setCreateParentId(null); 
+    setIsCreatingFolder(asFolder);
+    setOpenDialog(true);
+  };
 
   const handleFileMenuOpen = (event: React.MouseEvent<HTMLElement>, file: FileItem) => {
       event.stopPropagation(); 
@@ -174,6 +235,9 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
   const handleClickOpenDialog = () => { setOpenDialog(true);};
   const handleCloseDialog = () => {setOpenDialog(false);};
 
+  const handleClickOpenFolderDialog = () => { setOpenFolderDialog(true);};
+  const handleCloseFolderDialog = () => {setOpenFolderDialog(false);};
+
   const getIcon = (ext: string) => {
       if (ext === '.md') return <DescriptionIcon />;
       if (['.png', '.jpg', '.jpeg'].includes(ext)) return <ImageIcon />;
@@ -194,15 +258,58 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
             name: encrypted.content,
             content: encryptedContent.content,
             iv: encrypted.iv,
-            projectId: projectId
+            projectId: projectId,
+            parentId: createParentId,
+            isFolder: isCreatingFolder,
           });
         
-          const newFile = { ...response.data, name: fileName };
-          setProjectFiles(prev => [...prev, newFile]);
-          onFileSelect(newFile.id); 
+          const serverData = response.data;
+
+          const newItem: FileItem = { 
+            id: serverData.id || serverData.Id, 
+            name: fileName, 
+            iv: serverData.iv || serverData.Iv,
+            extension: serverData.extension || serverData.Extension || (isCreatingFolder ? "" : ".md"),
+            parentId: createParentId,
+            isFolder: isCreatingFolder,
+          };
+
+          setProjectFiles(prev => [...prev, newItem]);
+
+          if (createParentId) {
+            setExpanded(prev => prev.includes(createParentId) ? prev : [...prev, createParentId]);
+          }
+
+          if (!isCreatingFolder) onFileSelect(newItem.id); 
           handleCloseDialog();
         } catch (error) {
               console.error("Ошибка при создании файла:", error);
+        }
+  };
+
+  const handleFolderSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const folderName = formData.get('folderName') as string;
+
+        if (!folderName || !projectId || !masterKey) return;
+
+        try {
+          const encrypted = await DCrypto.encrypt(folderName, masterKey);
+          const encryptedContent = await DCrypto.encrypt("", masterKey, DCrypto.base64ToBuffer(encrypted.iv));
+          const response = await $api.post('/files', {
+            name: encrypted.content,
+            content: encryptedContent.content,
+            iv: encrypted.iv,
+            projectId: projectId,
+            isFolder: true,
+          });
+        
+          const newFolder = { ...response.data, name: folderName };
+          setProjectFiles(prev => [...prev, newFolder]);
+          handleCloseFolderDialog();
+        } catch (error) {
+              console.error("Ошибка при создании папки:", error);
         }
   };
 
@@ -211,11 +318,17 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     }
   
   const filteredFiles = useMemo(() => {
-    return projectFiles.filter((file) =>
-      file.name.toLowerCase().includes(searchField.toLowerCase())
-    );
+      const filtered = projectFiles.filter((file) =>
+          file.name.toLowerCase().includes(searchField.toLowerCase())
+      );
+
+      return [...filtered].sort((a, b) => {
+        if (a.isFolder === b.isFolder) return 0;
+        return a.isFolder ? -1 : 1;
+      });
   }, [projectFiles, searchField]);
 
+  const fileTree = useMemo(() => buildFileTree(filteredFiles), [filteredFiles]);
   /*
   useEffect(() => {
         if (projectId && masterKey) {               
@@ -268,6 +381,10 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     }
   };
 
+  const availableFolders = useMemo(() => {
+    return projectFiles.filter(f => f.isFolder);
+  }, [projectFiles]);
+
   return (
     <>
     <SidebarWrapper
@@ -298,76 +415,97 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
      children={
         <List sx={{ px: 2, mt: 1 }}>
         <AnimatePresence mode="popLayout">
-        {filteredFiles.map((file, index) => (
-          <ListItem key={file.id} disablePadding sx={{ mb: 1, '&:hover .file-actions': { opacity: 1 }  }}  component={motion.li} variants={listVariants} initial="hidden" animate="visible" exit="exit" custom={index} layout
-          secondaryAction={
-            <IconButton
-              className="file-actions" 
-              edge="end"
-              size="small"
-              onClick={(e) => handleFileMenuOpen(e, file)}
-              sx={{
-                opacity: 0,
-                transition: 'opacity 0.2s',
-                color: 'rgba(117, 117, 117, 0.5)',
-                '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' }
-              }}
-            >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
-          }>
-            <ListItemButton
-            disabled={!masterKey}
-              selected={selectedId === file.id}
-              onClick={() => {
-                  setSelectedId(file.id); 
-                  onFileSelect(file.id); 
-              }}
-              sx={{
-                borderRadius: 3,
-                '&.Mui-selected': {
-                  bgcolor: 'primary.light',
-                  color: 'primary.contrastText',
-                  '&:hover': {
-                    bgcolor: 'white',
-                  },
-                  '& .MuiListItemIcon-root': {
-                    color: 'inherit',
-                  }
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>
-                {getIcon(file.extension)} 
-              </ListItemIcon>
-              <ListItemText primaryTypographyProps={{ 
-                  fontWeight: 'medium',
-                  noWrap: true,       
-                  title: file.name 
-              }}
-                primary={file.name} 
-              />
-            </ListItemButton>
-          </ListItem>
+        {searchField ? (
+           <>
+        {fileTree.map((item, index) => (
+            <FileTreeItem 
+                key={item.id}
+                item={item}
+                index={index}
+                level={0}
+                selectedId={selectedId}
+                onFileSelect={(id: string) => { setSelectedId(id); onFileSelect(id); }}
+                expanded={expanded}
+                onToggle={toggleFolder}
+                onMenuOpen={handleFileMenuOpen}
+                getIcon={getIcon}
+                masterKey={masterKey}
+                orbColors={orbColors}
+            />
         ))}
         {filteredFiles.length === 0 && searchField && (
           <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', display: 'block', mt: 2 }}>
             Ничего не найдено
           </Typography>
         )}
+        </>) : (
+          <>
+          {fileTree.map((item, index) => (
+            <FileTreeItem 
+                key={item.id}
+                item={item}
+                index={index}
+                level={0}
+                selectedId={selectedId}
+                onFileSelect={(id: string) => { setSelectedId(id); onFileSelect(id); }}
+                expanded={expanded}
+                onToggle={toggleFolder}
+                onMenuOpen={handleFileMenuOpen}
+                getIcon={getIcon}
+                masterKey={masterKey}
+                orbColors={orbColors}
+            />
+        ))}
+        {filteredFiles.length === 0 && searchField && (
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', display: 'block', mt: 2 }}>
+            Ничего не найдено
+          </Typography>
+        )}
+        </>
+        )}
         </AnimatePresence>
       </List>
      }
      bottomAction={
+       <>
       <Button
           variant="contained" 
           fullWidth           
           startIcon={<CreateIcon />} 
-          onClick={handleClickOpenDialog}
+          onClick={handleOpenCreateMenu}
           sx={{...whiteSolidButton, p:1.5}}
         >
-          Создать файл
+          Создать элемент
         </Button>
+        <Menu
+            anchorEl={createAnchorEl}
+            open={Boolean(createAnchorEl)}
+            onClose={handleCloseCreateMenu}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+           PaperProps={{
+                    sx: {
+                        bgcolor: 'rgba(20, 20, 20, 0.46)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        color: 'white',
+                        minWidth: '180px',
+                        borderRadius: '12px',
+                         boxShadow: '0 10px 40px rgba(0,0,0,0.5)', 
+                        transform: 'translateY(-12px) !important',
+                    }
+                }}
+        >
+            <MenuItem onClick={() => { handleOpenGlobalCreate(false); handleCloseCreateMenu(); }} sx={{ gap: 1.5, py: 1, mx: 0.5, borderRadius: '10px', }}>
+                <DescriptionIcon fontSize="small" sx={{ opacity: 0.7 }} />
+                <Typography variant="body2">Файл</Typography>
+            </MenuItem>
+            <MenuItem onClick={() => { handleOpenGlobalCreate(true); handleCloseCreateMenu(); }} sx={{ gap: 1.5, py: 1, mt:0.5, mx: 0.5, borderRadius: '10px', }}>
+                <FolderIcon fontSize="small" sx={{ opacity: 0.7 }} />
+                <Typography variant="body2">Папка</Typography>
+            </MenuItem>
+        </Menu>
+        </>
      }
      secondBottomAction={
      <>
@@ -417,14 +555,16 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       minWidth: '400px !important', 
     }
   }}>
-          <DialogTitle sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
-    Новый Файл
+          <DialogTitle sx={{ fontWeight: 600, fontSize: '1.2rem', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1.5, textAlign: 'center' }}>
+    {isCreatingFolder ? <FolderIcon sx={{mb: 0.1, color: orbColors[1].replace(/[\d.]+\)$/g, '1)')}}/> : <DescriptionIcon sx={{mb: 0.1}}/>}
+    {isCreatingFolder ? "Новая Папка" : "Новый Файл"}
   </DialogTitle>
         <DialogContent>
              <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
-      Введите название для вашего нового файла. Вы сможете изменить настройки позже.
+    Введите название для {isCreatingFolder ? "папки" : "файла"}. Вы сможете изменить настройки позже.
     </DialogContentText>
           <form onSubmit={handleSubmit} id="subscription-form">
+            <Stack spacing={3}>
             <TextField
         autoFocus
         margin="dense"
@@ -436,11 +576,120 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         variant="outlined" 
         sx={{'& .MuiInputBase-input': { color: 'white' },'& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' },'& .MuiInputLabel-root.Mui-focused': { color: '#fff' },'& .MuiOutlinedInput-root': {borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
       />
+      <TextField
+          select
+          fullWidth
+          label="Разместить в..."
+          value={createParentId || ""}
+          onChange={(e) => setCreateParentId(e.target.value || null)}
+          sx={{'& .MuiInputBase-input': { color: 'white' },'& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' },'& .MuiInputLabel-root.Mui-focused': { color: '#fff' },'& .MuiOutlinedInput-root': {borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
+          SelectProps={{
+            MenuProps: {
+              PaperProps: {
+                slotProps: {
+                  paper: {
+                    sx: {
+                      bgcolor: 'rgba(15, 15, 15, 0.9)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                      color: 'white',
+                      minWidth: '160px',
+                      mt: 0.5
+                    }
+                  }
+                }}
+              }
+            }
+          }
+        >
+          <MenuItem value="" sx={{ gap: 1.5 }}>
+            <InsertDriveFileIcon fontSize="small" sx={{ opacity: 0.5 }} />
+            <Typography variant="body2">Корень проекта (общее пространство)</Typography>
+          </MenuItem>
+          
+          {availableFolders.map((folder) => (
+            <MenuItem key={folder.id} value={folder.id} sx={{ gap: 1.5 }}>
+              <FolderIcon fontSize="small" sx={{ opacity: 0.7, color: orbColors[1] }} />
+              <Typography variant="body2">{folder.name}</Typography>
+            </MenuItem>
+          ))}
+        </TextField>
+      </Stack>
           </form>
         </DialogContent>
         <DialogActions>
           <Button 
       onClick={handleCloseDialog}
+      variant="outlined"
+      sx={{ 
+        ...whiteOutlinedButton,
+         m: 1,
+        px: 3
+      }}
+    >Отмена
+    </Button>
+          <Button 
+      type="submit" 
+      form="subscription-form"
+      variant="contained"
+      sx={{
+    ...whiteSolidButton,
+    m: 1,
+    px: 3
+}}
+    >
+      Создать
+    </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openFolderDialog} onClose={handleCloseFolderDialog}  slotProps={{
+    backdrop: {
+      sx: {
+        backdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      },
+      
+    },
+    
+  }}
+  PaperProps={{
+    sx: {
+      borderRadius: '20px !important',
+      bgcolor: 'rgba(12, 12, 12, 0.7) !important', 
+      background: 'rgba(27, 27, 27, 0.7) !important', 
+      backdropFilter: 'blur(12px) !important', 
+      border: '1px solid rgba(255, 255, 255, 0.1) !important', 
+      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5) !important', 
+      color: 'white !important', 
+      minWidth: '400px !important', 
+    }
+  }}>
+          <DialogTitle sx={{ fontWeight: 600, fontSize: '1.2rem', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1.5, textAlign: 'center'  }}>
+    <FolderIcon sx={{mb: 0.1}}/> Новая Папка
+  </DialogTitle>
+        <DialogContent>
+             <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+      Введите название для новой папки. Вы сможете изменить настройки позже.
+    </DialogContentText>
+          <form onSubmit={handleFolderSubmit} id="subscription-form">
+            <TextField
+        autoFocus
+        margin="dense"
+        id="name"
+        name="folderName"
+        label="Название папки"
+        type="text"
+        fullWidth
+        variant="outlined" 
+        sx={{'& .MuiInputBase-input': { color: 'white' },'& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' },'& .MuiInputLabel-root.Mui-focused': { color: '#fff' },'& .MuiOutlinedInput-root': {borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
+      />
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+      onClick={handleCloseFolderDialog}
       variant="outlined"
       sx={{ 
         ...whiteOutlinedButton,
@@ -482,6 +731,27 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     }
   }}
 >
+  {menuFile?.isFolder && [
+    <MenuItem key="add-file" onClick={() => { 
+        setCreateParentId(menuFile.id); 
+        setIsCreatingFolder(false); 
+        setOpenDialog(true); 
+        handleFileMenuClose(); 
+    }} sx={{ gap: 1.5, borderRadius: '8px', mx: 0.5 }}>
+        <CreateIcon fontSize="small" sx={{ opacity: 0.7 }} />
+        <Typography variant="body2">Создать файл здесь</Typography>
+    </MenuItem>,
+    <MenuItem key="add-folder" onClick={() => { 
+        setCreateParentId(menuFile.id); 
+        setIsCreatingFolder(true); 
+        setOpenDialog(true); 
+        handleFileMenuClose(); 
+    }} sx={{ gap: 1.5, borderRadius: '8px', mx: 0.5 }}>
+        <CreateNewFolderIcon fontSize="small" sx={{ opacity: 0.7 }} />
+        <Typography variant="body2">Создать папку здесь</Typography>
+    </MenuItem>,
+    <Divider key="div" sx={{ my: 1, opacity: 0.1 }} />
+  ]}
   <MenuItem onClick={handleOpenRename} sx={{ gap: 1.5, borderRadius: '8px', mx: 0.5 }}>
     <EditIcon fontSize="small" sx={{ opacity: 0.7 }} />
     <Typography variant="body2">Переименовать</Typography>

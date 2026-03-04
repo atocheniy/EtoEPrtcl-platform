@@ -1,9 +1,11 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { DCrypto } from '../../services/cryptoService';
-import type { FileItem, Project, User } from '../../types/auth';
+import { ApplicationTheme, type FileItem, type Project, type User } from '../../types/auth';
 import { UserService } from '../../services/userService';
 import { ProjectService } from '../../services/projectService';
 import $api from '../../api/axios';
+import App from '../../App';
+import { useMediaQuery } from '@mui/material';
 
 interface InitKeysResult {
     publicKey: string;
@@ -34,10 +36,17 @@ interface EncryptionContextType {
     initKeysForLogin: (password: string, salt: string, encKey: string, iv: string) => Promise<void>;
 
     currentProjectId: string | null;
+
     orbColors: [string, string];
     setOrbColors: React.Dispatch<React.SetStateAction<[string, string]>>;
+    theme: ApplicationTheme;
+    setTheme: React.Dispatch<React.SetStateAction<ApplicationTheme>>;
+    isDarkMode: boolean;
+
     refreshCurrentProjectId: (id: string) => void;
     clearCurrentProjectId: () => void;
+
+    logout: () => void;
 }
 
 const EncryptionContext = createContext<EncryptionContextType | null>(null);
@@ -45,7 +54,7 @@ const EncryptionContext = createContext<EncryptionContextType | null>(null);
 export const EncryptionProvider = ({ children }: { children: React.ReactNode }) => {
     const [masterKey, setMasterKey] = useState<CryptoKey | null>(null);
     const [signingKey, setSigningKey] = useState<CryptoKey | null>(null);
-    const [userData, setUserData] = useState<User>({ fullName: 'Загрузка...', email: '', salt: '', orbColor1: 'rgba(0, 0, 0, 0)', orbColor2: 'rgba(0, 0, 0, 0)' });
+    const [userData, setUserData] = useState<User>({ fullName: 'Загрузка...', email: '', salt: '', orbColor1: 'rgba(0, 0, 0, 0)', orbColor2: 'rgba(0, 0, 0, 0)', theme: ApplicationTheme.Auto });
     const [projectData, setProjectData] = useState<Project>({ id: "123", name: 'Загрузка...', iv: "123", isPublic: false, priority: "Low", status: "Active"});
     const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
@@ -57,15 +66,28 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
         'rgba(169, 85, 247, 0.15)' 
     ]);
 
+    const [theme, setTheme] = useState<ApplicationTheme>(ApplicationTheme.Auto);
+
+    const systemPrefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+    const isDarkMode = useMemo(() => {
+        if (theme === 'Auto') {
+            console.log("System prefers dark mode:", systemPrefersDark);
+            return systemPrefersDark; 
+        }
+        console.log("User theme preference:", theme);
+        return theme === 'Dark'; 
+    }, [theme, systemPrefersDark]);
+
     const refreshUserData = async () => {
         try {
             const data = await UserService.getUser();
             setUserData(data);
 
             if (data.orbColor1 && data.orbColor2) setOrbColors([data.orbColor1, data.orbColor2]);
+            if (data.theme) setTheme(data.theme);
         } catch (error) {
             console.error("Ошибка обновления данных пользователя", error);
-            setUserData({ fullName: 'Гость', email: 'Ошибка загрузки', salt: '', orbColor1: 'rgba(0, 0, 0, 0)', orbColor2: 'rgba(0, 0, 0, 0)' });
+            setUserData({ fullName: 'Гость', email: 'Ошибка загрузки', salt: '', orbColor1: 'rgba(0, 0, 0, 0)', orbColor2: 'rgba(0, 0, 0, 0)', theme: ApplicationTheme.Auto });
         }
     };
     
@@ -149,11 +171,11 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
    }, [currentProjectId, masterKey])
 
     useEffect(() => {
-        if (masterKey) {
+        if (masterKey && signingKey) { 
             refreshProjects();
             refreshUserData();
         }
-    }, [masterKey]);
+    }, [masterKey, signingKey]);
     
     /*
     const initKeys = async (password: string, email: string) => {
@@ -197,8 +219,28 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
         await DCrypto.saveKeyToStorage(sKey, "signing_key");
     };
 
+    const logout = () => {
+        setMasterKey(null);
+        setSigningKey(null);
+
+        setUserData({ 
+            fullName: 'Загрузка...', 
+            email: '', 
+            salt: '', 
+            orbColor1: 'rgba(0, 0, 0, 0)', 
+            orbColor2: 'rgba(0, 0, 0, 0)' ,
+            theme: ApplicationTheme.Auto
+        });
+
+        setProjects([]);
+        clearCurrentProjectId();
+
+        localStorage.removeItem('token');
+        DCrypto.clearAllKeys(); 
+    };
+
     return (
-        <EncryptionContext.Provider value={{ masterKey, signingKey, userData, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, refreshCurrentProjectId, currentProjectId, projectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles }}>
+        <EncryptionContext.Provider value={{ masterKey, signingKey, userData, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
             {children}
         </EncryptionContext.Provider>
     );

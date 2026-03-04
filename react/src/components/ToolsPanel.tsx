@@ -90,7 +90,7 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            height: '60px',
+            height: '55px',
             boxSizing: 'border-box',
             boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
             

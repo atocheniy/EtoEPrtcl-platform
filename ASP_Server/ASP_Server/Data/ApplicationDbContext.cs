@@ -30,6 +30,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .Property(p => p.Priority)
             .HasConversion<string>();
         
+        builder.Entity<ApplicationUser>()
+            .Property(u => u.Theme)
+            .HasConversion<string>();
+        
         /*
         var encryptionConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<string, string>(
             v => AesEncryption.Encrypt(v), 
