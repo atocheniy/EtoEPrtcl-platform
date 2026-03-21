@@ -53,6 +53,15 @@ export interface FileItem {
     iv: string;
     parentId: string | null;
     isFolder: boolean;
+    links?: string[];
+    tags?: Tag[];
+}
+
+export interface Tag {
+    index: string;
+    encryptedName: string;
+    iv: string;
+    decryptedName?: string;
 }
 
 export interface Project {

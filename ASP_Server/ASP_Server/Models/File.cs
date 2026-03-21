@@ -19,6 +19,10 @@ public class File
     
     public bool IsFolder { get; set; } = false;
     
+    public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
+    public virtual ICollection<FileLink> LinksFrom { get; set; } = new List<FileLink>();
+    public virtual ICollection<FileLink> LinksTo { get; set; } = new List<FileLink>();
+    
     public Guid? ParentId { get; set; }
     
     public Guid ProjectId { get; set; }

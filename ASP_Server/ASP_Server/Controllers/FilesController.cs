@@ -81,9 +81,35 @@ public class FilesController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         
         var file = await _context.Files
+            .Include(f => f.Tags)
+            .Include(f => f.LinksFrom)
             .Include(f => f.Project)
             .FirstOrDefaultAsync(f => f.Id == id && f.Project.UserId == userId);
         if (file == null) return NotFound("Файл не найден");
+        
+        if (model.Tags != null)
+        {
+            file.Tags.Clear();
+            foreach (var tDto in model.Tags)
+            {
+                var tag = await _context.Tags.FirstOrDefaultAsync(t => t.Index == tDto.Index);
+                if (tag == null)
+                {
+                    tag = new Tag { Index = tDto.Index, EncryptedName = tDto.EncryptedName, Iv = tDto.Iv };
+                    _context.Tags.Add(tag);
+                }
+                file.Tags.Add(tag);
+            }
+        }
+        
+        if (model.LinkedFileIds != null)
+        {
+            _context.FileLinks.RemoveRange(file.LinksFrom);
+            foreach (var targetId in model.LinkedFileIds)
+            {
+                file.LinksFrom.Add(new FileLink { SourceFileId = id, TargetFileId = targetId });
+            }
+        }
         
         if (model.Name != null) file.Name = model.Name;
         if (model.Extension != null) file.Extension = model.Extension;
@@ -110,8 +136,10 @@ public class FilesController : ControllerBase
     {
         
         var files = _context.Files
+            .Include(f => f.LinksFrom)
+            .Include(f => f.Tags)
             .Where(f => f.ProjectId == projectId)
-            .Select(f => new { f.Id, f.Name, f.IsFolder, f.Extension, f.Iv, f.ParentId }) 
+            .Select(f => new { f.Id, f.Name, f.IsFolder, f.Extension, f.Iv, f.ParentId, Links = f.LinksFrom.Select(l => l.TargetFileId), Tags = f.Tags.Select(t => new { t.EncryptedName, t.Iv, t.Index })   }) 
             .ToList();
                             
         return Ok(files);
@@ -120,12 +148,16 @@ public class FilesController : ControllerBase
     [HttpGet("{fileId}")]
     [Authorize]
     [SignatureRequired]
-    public IActionResult GetFileContent(Guid fileId)
+    public async Task<IActionResult> GetFileContent(Guid fileId)
     {
-        var file = _context.Files.Find(fileId);
+        var file = await _context.Files
+            .Include(f => f.Tags)           
+            .Include(f => f.LinksFrom)     
+            .FirstOrDefaultAsync(f => f.Id == fileId);
+
         if (file == null) return NotFound();
 
-        return Ok(new { file.Id, file.Name, file.Content, file.Iv });
+        return Ok(new { file.Id, file.Name, file.Content, file.Iv, Tags = file.Tags.Select(t => new { t.EncryptedName, t.Iv, t.Index }), Links = file.LinksFrom.Select(l => l.TargetFileId)  });
     }
     
     [HttpGet("all")]
@@ -136,8 +168,19 @@ public class FilesController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         
         var allFiles = await _context.Files
+            .Include(f => f.LinksFrom)
+            .Include(f => f.Tags)
             .Where(f => f.Project.UserId == userId)
-            .Select(f => new { f.Id, f.Name, f.Iv, f.ProjectId })
+            .Select(f => new { 
+                f.Id, 
+                f.Name, 
+                f.Iv, 
+                f.ProjectId,
+                f.IsFolder,
+                f.Extension,
+                Tags = f.Tags.Select(t => new { t.EncryptedName, t.Iv, t.Index }),
+                Links = f.LinksFrom.Select(l => l.TargetFileId)
+            })
             .ToListAsync();
 
         return Ok(allFiles);

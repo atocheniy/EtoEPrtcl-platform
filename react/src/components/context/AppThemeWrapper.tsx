@@ -6,11 +6,12 @@ import { useEncryption } from './EncryptionContext';
 export const AppThemeWrapper = ({ children }: { children: React.ReactNode }) => {
     const { isDarkMode } = useEncryption();
 
-    
     const theme = useMemo(() => createTheme({
         palette: {
             mode: isDarkMode ? 'dark' : 'light',
+            
         },
+        
     }), [isDarkMode]);
 
     return (

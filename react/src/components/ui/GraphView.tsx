@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ForceGraph2D, { type GraphData, type NodeObject } from 'react-force-graph-2d';
 import { useTheme } from '@mui/material/styles';
-import { Box, Divider, Paper, Slider, Stack, Typography } from '@mui/material';
+import { Box, Checkbox, Divider, FormControlLabel, Paper, Slider, Stack, Typography } from '@mui/material';
 
 import * as d3 from 'd3-force';
 import { useEncryption } from '../context/EncryptionContext';
@@ -11,6 +11,8 @@ interface GraphNode extends NodeObject {
   name: string;
   val: number; 
   color?: string;
+  isProject?: boolean; 
+  isTag?: boolean; 
 }
 
 interface GraphLink {
@@ -29,10 +31,14 @@ const GraphView: React.FC<GraphViewProps> = ({ files, projects, onNodeClick }) =
   const [dimensions, setDimensions] = useState({ w: 800, h: 600 });
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] });
 
-  const [chargeStrength, setChargeStrength] = useState(-50); 
-  const [gravityStrength, setGravityStrength] = useState(0.15); 
-  const [collisionRadius, setCollisionRadius] = useState(12); 
+  const [chargeStrength, setChargeStrength] = useState(-100); 
+  const [gravityStrength, setGravityStrength] = useState(0.10); 
+  const [collisionRadius, setCollisionRadius] = useState(25); 
   const [particleSpeed, setParticleSpeed] = useState(0.005);
+
+  const [showProjects, setShowProjects] = useState(true);
+  const [showTags, setShowTags] = useState(true); 
+  const [showLinks, setShowLinks] = useState(true);
 
   const { orbColors } = useEncryption();
 
@@ -58,8 +64,12 @@ const GraphView: React.FC<GraphViewProps> = ({ files, projects, onNodeClick }) =
     const fg = fgRef.current;
 
     fg.d3Force('link')
-      .distance((link: any) => link.isProjectLink ? 100 : 40) 
-      .strength((link: any) => link.isProjectLink ? 0.2 : 0.5);
+      .distance((link: any) => {
+          if (link.isProjectLink) return 100;
+          if (link.isTagLink) return 60;
+          return 40;
+      }) 
+      .strength((link: any) => link.isProjectLink ? 0.2 : 0.4);
 
     fg.d3Force('x', d3.forceX(0).strength(gravityStrength / 2));
     fg.d3Force('y', d3.forceY(0).strength(gravityStrength / 2));
@@ -79,11 +89,13 @@ const GraphView: React.FC<GraphViewProps> = ({ files, projects, onNodeClick }) =
     // fg.d3Reheat();
   }, [data, chargeStrength, gravityStrength, collisionRadius]);
 
-  useEffect(() => {
+useEffect(() => {
     const nodes: GraphNode[] = [];
     const links: GraphLink[] = [];
 
+    const fileIds = new Set(files.map(f => f.id));
     const projectNodesSet = new Set<string>();
+    const tagNodesSet = new Set<string>();
 
     files.forEach(file => {
       nodes.push({
@@ -91,42 +103,71 @@ const GraphView: React.FC<GraphViewProps> = ({ files, projects, onNodeClick }) =
         name: file.name,
         val: 3,
         color: orbColors[0].replace(/[\d.]+\)$/g, '1)'), 
-        isProject: false 
-      } as any);
+        isProject: false,
+        isTag: false
+      } as GraphNode);
 
-      if (file.projectId && !projectNodesSet.has(file.projectId)) {
-        projectNodesSet.add(file.projectId);
-
-        const projectInfo = projects.find(p => p.id === file.projectId);
-        
-        nodes.push({
-            id: file.projectId,
-            name: projectInfo ? projectInfo.name : "Неизвестный проект",
-            val: 10,
-            color: '#ffffff',
-            isProject: true
-        } as any);
-      }
-
-      if (file.projectId) {
-        links.push({
-          source: file.id,
-          target: file.projectId,
-          isProjectLink: true
-        } as any);
-      }
-
-      if (file.links && Array.isArray(file.links)) {
+      if (showLinks && file.links && Array.isArray(file.links)) {
         file.links.forEach((targetId: string) => {
-          if (files.find(f => f.id === targetId)) {
-            links.push({ source: file.id, target: targetId, isProjectLink: false } as any);
+          if (fileIds.has(targetId)) {
+            links.push({
+              source: file.id,
+              target: targetId,
+              isProjectLink: false,
+              isTagLink: false
+            } as any);
           }
         });
+      }
+
+      if (showProjects && file.projectId) {
+        if (!projectNodesSet.has(file.projectId)) {
+          projectNodesSet.add(file.projectId);
+          const projectInfo = projects.find(p => p.id === file.projectId);
+          nodes.push({
+            id: file.projectId,
+            name: projectInfo ? projectInfo.name : "Проект",
+            val: 8,
+            color: '#ffffff',
+            isProject: true,
+            isTag: false
+          } as GraphNode);
+        }
+        links.push({ 
+          source: file.id, 
+          target: file.projectId, 
+          isProjectLink: true, 
+          isTagLink: false 
+        } as any);
+      }
+
+      if (showTags) {
+        const fileTags = file.tags || file.Tags || [];
+        if (Array.isArray(fileTags)) {
+          fileTags.forEach((t: any) => {
+            const tagName = typeof t === 'string' ? t : (t.decryptedName || t.name); 
+            if (!tagName) return;
+
+            const tagId = `tag-${tagName}`;
+            if (!tagNodesSet.has(tagId)) {
+              tagNodesSet.add(tagId);
+              nodes.push({
+                id: tagId,
+                name: `#${tagName}`,
+                val: 5,
+                color: orbColors[1].replace(/[\d.]+\)$/g, '1)'),
+                isProject: false,
+                isTag: true
+              } as GraphNode);
+            }
+            links.push({ source: file.id, target: tagId, isTagLink: true } as any);
+          });
+        }
       }
     });
 
     setData({ nodes, links });
-  }, [files, projects]);
+  }, [files, projects, showProjects, showTags, showLinks, orbColors]);
 
   return (
     <Box 
@@ -166,24 +207,33 @@ const GraphView: React.FC<GraphViewProps> = ({ files, projects, onNodeClick }) =
         nodeCanvasObject={(node, ctx, globalScale) => {
           const label = (node as GraphNode).name;
           const isProject = node.isProject;
+          const isTag = node.isTag;
           const fontSize = 12 / globalScale;
           ctx.font = `${fontSize}px Sans-Serif`;
           const textWidth = ctx.measureText(label).width;
           const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
 
           ctx.shadowColor = node.color;
-          ctx.shadowBlur = isProject ? 15 : 5;
+          ctx.shadowBlur = isProject ? 20 : (isTag ? 10 : 5);
 
-          ctx.beginPath();
-          ctx.arc(node.x!, node.y!, 5, 0, 2 * Math.PI, false);
-          ctx.fillStyle = (node as GraphNode).color || '#818cf8';
+          ctx.beginPath();          
+
+          if (isTag) {
+            const s = 4; 
+            ctx.rect(node.x! - s, node.y! - s, s * 2, s * 2);
+          } else {
+            const r = isProject ? 8 : 5;
+            ctx.arc(node.x!, node.y!, r, 0, 2 * Math.PI, false);
+            ctx.fillStyle = (node as GraphNode).color || '#818cf8';
+          }
           ctx.fill();
 
+          const offset = isProject ? 14 : 10;
           if (globalScale > 1.5) {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.fillText(label, node.x!, node.y! + 8);
+            ctx.fillText(label, node.x!, node.y! + offset);
           }
         }}
       />
@@ -254,6 +304,27 @@ const GraphView: React.FC<GraphViewProps> = ({ files, projects, onNodeClick }) =
               sx={{ color: orbColors[0].replace(/[\d.]+\)$/g, '1)') }}
             />
           </Box>
+
+          <Divider sx={{ bgcolor: 'rgba(255,255,255,0.05)', mb: 2 }} />
+
+         <Box sx={{ mb: 2 }}>
+    <Typography variant="caption" sx={{ opacity: 0.5, display: 'block', mb: 1 }}>ОТОБРАЖЕНИЕ</Typography>
+    <Stack direction="row" spacing={1} flexWrap="wrap"> 
+        <FormControlLabel
+            control={<Checkbox size="small" checked={showProjects} onChange={e => setShowProjects(e.target.checked)} sx={{ color: '#fff', '&.Mui-checked': { color: '#818cf8' } }} />}
+            label={<Typography variant="caption">Проекты</Typography>}
+        />
+        <FormControlLabel
+            control={<Checkbox size="small" checked={showTags} onChange={e => setShowTags(e.target.checked)} sx={{ color: '#fff', '&.Mui-checked': { color: orbColors[1] } }} />}
+            label={<Typography variant="caption">Теги</Typography>}
+        />
+        <FormControlLabel
+            control={<Checkbox size="small" checked={showLinks} onChange={e => setShowLinks(e.target.checked)} sx={{ color: '#fff', '&.Mui-checked': { color: '#4ade80' } }} />}
+            label={<Typography variant="caption">Связи</Typography>}
+        />
+    </Stack>
+</Box>
+
         </Stack>
       </Paper>
     </Box>

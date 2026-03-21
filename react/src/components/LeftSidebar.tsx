@@ -84,12 +84,25 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
     if (!masterKey) return;
     
     try {
-      const response = await $api.get<FileItem[]>('/files/all');
+      const response = await $api.get<any[]>('/files/all');
       
       const decryptedFiles = await Promise.all(response.data.map(async f => {
         try {
           const name = await DCrypto.decrypt(f.name, f.iv, masterKey);
-          return { ...f, name };
+           const rawTags = f.tags || [];
+                const decryptedTags = await Promise.all(rawTags.map(async (t: any) => {
+                    try {
+                        const decryptedName = await DCrypto.decrypt(t.encryptedName || t.EncryptedName, t.iv || t.Iv, masterKey);
+                        return { index: t.index || t.Index, decryptedName };
+                    } catch { return null; }
+                }));
+
+           return { 
+                    ...f, 
+                    name, 
+                    links: f.links || [], 
+                    tags: decryptedTags.filter(t => t !== null) 
+                };
         } catch {
           return { ...f, name: "Ошибка" };
         }

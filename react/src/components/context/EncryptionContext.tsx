@@ -18,7 +18,7 @@ interface EncryptionContextType {
     masterKey: CryptoKey | null;
     signingKey: CryptoKey | null;
 
-    userData: User | { fullName: 'Загрузка...', email: '' };
+    userData: User | { fullName: 'Загрузка...', email: '', salt: '' };
     refreshUserData: () => Promise<void>;
 
     projectData: Project; 
@@ -113,11 +113,19 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     const refreshProjectFiles = async (projectId: string) => {
         if (!masterKey) return;
         try {
-            const response = await $api.get<FileItem[]>(`/files/project/${projectId}`);
+            const response = await $api.get<any[]>(`/files/project/${projectId}`);
             const decryptedFiles = await Promise.all(response.data.map(async f => {
                 try {
                     const name = await DCrypto.decrypt(f.name, f.iv, masterKey);
-                    return { ...f, name };
+                    
+                    const rawTags = f.tags || [];
+                    const decryptedTags = await Promise.all(rawTags.map(async (t: any) => {
+                        try {
+                            return await DCrypto.decrypt(t.encryptedName, t.iv, masterKey);
+                        } catch { return null; }
+                    }));
+
+                    return { ...f, name, links: f.links || [], tags: decryptedTags.map((t, i) => ({ index: rawTags[i].index, encryptedName: rawTags[i].encryptedName, iv: rawTags[i].iv, decryptedName: t })) || [] };
                 } catch { return { ...f, name: "Ошибка расшифровки" }; }
             }));
             setProjectFiles(decryptedFiles);

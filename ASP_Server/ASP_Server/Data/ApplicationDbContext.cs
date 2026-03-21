@@ -13,6 +13,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Project> Projects { get; set; }
     public DbSet<File> Files { get; set; }
     
+    public DbSet<FileLink> FileLinks { get; set; }
+    
+    public DbSet<Tag> Tags { get; set; }
+    
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
@@ -33,6 +37,27 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<ApplicationUser>()
             .Property(u => u.Theme)
             .HasConversion<string>();
+        
+        
+        
+        builder.Entity<ASP_Server.Models.File>()
+            .HasMany(f => f.Tags)
+            .WithMany(t => t.Files);
+        
+        builder.Entity<FileLink>()
+            .HasKey(fl => new { fl.SourceFileId, fl.TargetFileId });
+
+        builder.Entity<FileLink>()
+            .HasOne(fl => fl.SourceFile)
+            .WithMany(f => f.LinksFrom)
+            .HasForeignKey(fl => fl.SourceFileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<FileLink>()
+            .HasOne(fl => fl.TargetFile)
+            .WithMany(f => f.LinksTo)
+            .HasForeignKey(fl => fl.TargetFileId)
+            .OnDelete(DeleteBehavior.Cascade);
         
         /*
         var encryptionConverter = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<string, string>(

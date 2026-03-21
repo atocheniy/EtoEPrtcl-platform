@@ -18,6 +18,7 @@ import ToolsPanel, { type MarkdownCommand } from '../components/ToolsPanel.tsx';
 
 import { $api } from '../api/axios';
 // import { FileService } from '../services/fileService.ts';
+import { TagsService } from '../services/tagsService.ts';
 
 //? Animations -------------------------------------
 
@@ -38,6 +39,8 @@ function MainContainer() {
 
     //! === States ===
     // const MotionPaper = motion.div;
+    const [currentFileTags, setCurrentFileTags] = useState<string[]>([]);
+    const [currentFileLinks, setCurrentFileLinks] = useState<string[]>([]);
 
     const [isPreviewMode, setIsPreviewMode] = useState(false);
     const [fileContent, setFileContent] = useState<string>('');
@@ -58,10 +61,11 @@ function MainContainer() {
 
     const showSkeleton = (isPending || manualLoading || isFileLoading) && (isPreviewMode || isWorkingWithPreview);
 
+    const { userData } = useEncryption();
     const { signingKey, setSigningKey } = useEncryption();
      const { orbColors, refreshCurrentProjectId, refreshProjects } = useEncryption();
      const { clearCurrentProjectId } = useEncryption();
-     const { setProjectFiles } = useEncryption();
+     const { projectFiles, setProjectFiles } = useEncryption();
 
     //! === Refs ===
     const contentPanelRef = useRef<ContentPanelHandle>(null);
@@ -109,6 +113,8 @@ function MainContainer() {
         if (!idToSave || !masterKey || contentToSave === lastSavedContentRef.current) return false;
 
         try {
+
+            const { tags, linkedFileIds } = await TagsService.extractMetadata(contentToSave, projectFiles, masterKey, userData.salt);
             const newIvRaw = window.crypto.getRandomValues(new Uint8Array(12));
             
             const encoder = new TextEncoder();
@@ -127,7 +133,9 @@ function MainContainer() {
             const payload = {
                 name: DCrypto.bufferToBase64(encryptedName),
                 content: DCrypto.bufferToBase64(encryptedContent),
-                iv: DCrypto.bufferToBase64(newIvRaw)
+                iv: DCrypto.bufferToBase64(newIvRaw),
+                tags: tags,
+                linkedFileIds: linkedFileIds
             };
 
             lastSavedContentRef.current = contentToSave;
@@ -135,7 +143,7 @@ function MainContainer() {
             await $api.put(`/files/${activeFileId}`, payload);
 
             setProjectFiles(prev => prev.map(f => 
-                f.id === activeFileId ? { ...f, iv: payload.iv } : f
+                f.id === activeFileId ? { ...f, iv: payload.iv, tags, links: linkedFileIds } : f
             ));
             
             console.log("Файл сохранен и подписан цифровым ключом.");
@@ -156,18 +164,24 @@ function MainContainer() {
         setIsFileLoading(true);
         try {
             const response = await $api.get(`/files/${fileId}`);
-            const { content, iv, name } = response.data;
+            const { content, iv, name, tags, links } = response.data;
 
             if (masterKey && iv) {
                 try {
                    
                     const decryptedName = await DCrypto.decrypt(name, iv, masterKey);
-                     const decryptedContent = content ? await DCrypto.decrypt(content, iv, masterKey) : "";
+                    const decryptedContent = content ? await DCrypto.decrypt(content, iv, masterKey) : "";
+
+                    const decryptedTags = await Promise.all((tags || []).map(async (t: any) => {
+                        return await DCrypto.decrypt(t.encryptedName, t.iv, masterKey);
+                    }));
 
                     startTransition(() => {
                         setFileName(decryptedName);
                         setFileContent(decryptedContent);
                         setActiveFileId(fileId);
+                        setCurrentFileTags(decryptedTags); 
+                        setCurrentFileLinks(links); 
                     });
 
                     contentRef.current = decryptedContent;
@@ -300,7 +314,7 @@ function MainContainer() {
         </motion.div>
 
         <div style={{display: "flex", flexDirection: "column", flex: 1, position: 'relative', justifyContent: 'center', alignItems: "center"}}>
-          <ContentPanel ref={contentPanelRef} isPreviewMode={isPreviewMode} activeFileId={activeFileId} content={fileContent} onChange={handleContentChange} isLoading={showSkeleton} saveFile={saveFile} isProjectSettinsOpen={isProjectSettinsOpen} setIsProjectSettinsOpen={setIsProjectSettinsOpen} handleCloseProject={handleCloseProject}/>
+          <ContentPanel ref={contentPanelRef} isPreviewMode={isPreviewMode} activeFileId={activeFileId} content={fileContent} onChange={handleContentChange} isLoading={showSkeleton} saveFile={saveFile} isProjectSettinsOpen={isProjectSettinsOpen} setIsProjectSettinsOpen={setIsProjectSettinsOpen} handleCloseProject={handleCloseProject} onFileSelect={handleFileSelect}/>
           <TopPanel selected={isPreviewMode} fileName={fileName} isLeftOpen={isLeftSidebarOpen} onLeftToggle={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} isRightOpen={isRightSidebarOpen} onRightToggle={() => setIsRightSidebarOpen(!isRightSidebarOpen)} activeFileId={activeFileId} closeFile={closeFile} 
           onToggle={() => {
                 const nextMode = !isPreviewMode;
@@ -352,7 +366,7 @@ function MainContainer() {
             transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
             style={{ overflow: 'hidden', display: 'flex' }}
         >
-            <RightSidebar/>
+            <RightSidebar content={fileContent} tags={currentFileTags} links={currentFileLinks} allFiles={projectFiles} onFileSelect={handleFileSelect} />
         </motion.div>
       </div>
     </AnimatedPage>

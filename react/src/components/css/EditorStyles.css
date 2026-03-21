@@ -4,7 +4,7 @@
   .w-md-editor-preview,
   .wmde-markdown {
       background-color: transparent !important;
-      
+      scroll-padding-top: 80px; 
   }
 
       
@@ -140,6 +140,10 @@
 .wmde-markdown .task-list-item:has(input:checked) {
     color: #666;
     text-decoration: line-through; 
+}
+
+.w-md-editor-content {
+    overflow-y: auto !important;
 }
     
 
