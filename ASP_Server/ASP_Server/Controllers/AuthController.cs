@@ -30,7 +30,7 @@ namespace ASP_Server.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterInfo model)
         {
-            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv, SignSalt = model.SignSalt, Theme = model.Theme};
+            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv, ExchangePublicKey = model.ExchangePublicKey, EncryptedExchangePrivateKey = model.EncryptedExchangePrivateKey, ExchangeKeyIv = model.ExchangeKeyIv, SignSalt = model.SignSalt, Theme = model.Theme};
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded) return Ok(new { message = "Регистрация успешна" });
@@ -47,8 +47,13 @@ namespace ASP_Server.Controllers
             {
                 return Ok(new { 
                     token = GenerateJwtToken(user),
+                    
                     encryptedSigningPrivateKey = user.EncryptedSigningPrivateKey,
                     signingKeyIv = user.SigningKeyIv,
+                    
+                    encryptedExchangePrivateKey = user.EncryptedExchangePrivateKey,
+                    exchangeKeyIv = user.ExchangeKeyIv,
+                    
                     salt = user.SignSalt
                 }); 
             }
@@ -154,6 +159,20 @@ namespace ASP_Server.Controllers
                 theme = user.Theme,
             });
         }
+        
+        [HttpGet("search")]
+        [Authorize]
+        public async Task<IActionResult> SearchUser(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) return NotFound("Пользователь не найден");
+
+            return Ok(new { 
+                id = user.Id, 
+                email = user.Email, 
+                exchangePublicKey = user.ExchangePublicKey
+            });
+        }
 
         private string GenerateJwtToken(ApplicationUser user)
         {
@@ -192,9 +211,15 @@ namespace ASP_Server.Controllers
         public string Email { get; set; }
         public string Password { get; set; }
         public string FullName { get; set; }
+        
         public string SigningPublicKey { get; set; }
         public string EncryptedSigningPrivateKey { get; set; }
         public string SigningKeyIv { get; set; }
+        
+        public string ExchangePublicKey { get; set; }
+        public string EncryptedExchangePrivateKey { get; set; }
+        public string ExchangeKeyIv { get; set; }
+        
         public string SignSalt { get; set; }
         
         public ApplicationTheme  Theme { get; set; }

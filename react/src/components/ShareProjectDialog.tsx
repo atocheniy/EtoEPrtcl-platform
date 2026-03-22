@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
     Dialog, DialogTitle, DialogContent, Box, Typography, 
     TextField, Button, Stack, Divider, List, ListItem, 
@@ -9,21 +9,90 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { whiteSolidButton, whiteOutlinedButton } from './css/sx';
 
+import { useEncryption } from './context/EncryptionContext';
+import { DCrypto } from '../services/cryptoService';
+import { UserService } from '../services/userService';
+import { ProjectService } from '../services/projectService';
+import { MotionDialog } from './ui/MotionDialog';
+import { motion } from 'framer-motion';
+
 interface ShareProjectDialogProps {
     open: boolean;
     onClose: () => void;
     projectData?: any;
 }
 
-const MOCK_MEMBERS =[
-    { id: '1', email: 'owner@app.com', role: 'owner', isMe: true },
-    { id: '2', email: 'colleague@gmail.com', role: 'editor', isMe: false },
-    { id: '3', email: 'client@company.com', role: 'viewer', isMe: false },
-];
-
 export default function ShareProjectDialog({ open, onClose, projectData }: ShareProjectDialogProps) {
-    const[inviteEmail, setInviteEmail] = useState("");
-    const [inviteRole, setInviteRole] = useState("viewer");
+     const { masterKey, currentProjectKey, userData } = useEncryption();
+     const [inviteEmail, setInviteEmail] = useState("");
+     const [inviteRole, setInviteRole] = useState("viewer");
+     const [members, setMembers] = useState<any[]>([]);
+     const [loading, setLoading] = useState(false);
+
+    const fetchMembers = async () => {
+        if (!projectData?.id) return;
+        try {
+            const data = await ProjectService.getMembers(projectData.id);
+            setMembers(data);
+        } catch (e) {
+            console.error("Ошибка загрузки участников", e);
+        }
+    };
+
+    useEffect(() => {
+        if (open) fetchMembers();
+    }, [open, projectData?.id]);
+
+    const handleAddMember = async () => {
+        if (!inviteEmail || !currentProjectKey) return;
+        setLoading(true);
+        try {
+            const friend = await UserService.searchUser(inviteEmail);
+            const rawKey = await window.crypto.subtle.exportKey("raw", currentProjectKey);
+            const friendPubKey = await DCrypto.importExchangePublicKey(friend.exchangePublicKey);
+
+            const encryptedKeyBuffer = await window.crypto.subtle.encrypt(
+                { name: "RSA-OAEP" },
+                friendPubKey,
+                rawKey
+            );
+
+            await ProjectService.addMember(projectData.id, {
+                userEmail: inviteEmail,
+                encryptedProjectKey: DCrypto.bufferToBase64(encryptedKeyBuffer),
+                iv: "RSA",
+                role: inviteRole
+            });
+
+            setInviteEmail("");
+            fetchMembers();
+        } catch (e: any) {
+            alert(e.response?.data || "Ошибка");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRemoveMember = async (userId: string) => {
+        if (!window.confirm("Удалить пользователя из проекта?")) return;
+        try {
+            await ProjectService.removeMember(projectData.id, userId);
+            setMembers(prev => prev.filter(m => m.userId !== userId));
+        } catch (e) {
+            alert("Не удалось удалить");
+        }
+    };
+
+    const handleUpdateRole = async (userId: string, newRole: string) => {
+        try {
+            await ProjectService.updateMemberRole(projectData.id, userId, newRole);
+            setMembers(prev => prev.map(m => m.userId === userId ? { ...m, role: newRole } : m));
+        } catch (e) {
+            alert("Не удалось обновить роль");
+        }
+    };
+
+    const amIOwner = members.find(m => m.isMe)?.role === 'Owner';
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(`https://localhost:5173/share/${projectData?.id || 'demo'}#KEY123`);
@@ -31,35 +100,20 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
     };
 
     return (
-        <Dialog 
+        <MotionDialog 
             open={open} 
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            slotProps={{
-                backdrop: {
-                    sx: {backgroundColor: 'rgba(0, 0, 0, 0)' }
-                }
-            }}
-            PaperProps={{ 
-                sx: { 
-                    bgcolor: 'rgba(12, 12, 12, 0.7) !important', 
-                    background: 'rgba(27, 27, 27, 0.7) !important',
-                    backdropFilter: 'blur(12px) !important', 
-                    border: '1px solid rgba(255, 255, 255, 0.1) !important', 
-                    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5) !important', 
-                    borderRadius: '20px !important',
-                    color: 'white !important',
-                    minWidth: '500px'
-                } 
-            }}
-        >
+        >   
             <DialogTitle sx={{ fontWeight: 800, textAlign: 'center', pt: 3 }}>
-                Управление доступом
+                Управление доступом {projectData?.name ? `к "${projectData.name}"` : ''}
             </DialogTitle>
             
             <DialogContent sx={{ px: 4, pb: 4 }}>
                 
+                {amIOwner && (
+                <>
                 <Box sx={{ mb: 4, mt: 1 }}>
                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', fontWeight: 600 }}>
                         ДОСТУП ПО ССЫЛКЕ
@@ -109,57 +163,71 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                         <Button 
                             variant="contained" 
                             sx={whiteSolidButton}
+                            onClick={handleAddMember}
                         >
                             <PersonAddIcon />
                         </Button>
                     </Stack>
                 </Box>
+                </>
+                )}
 
                 <Box>
                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', fontWeight: 600 }}>
-                        УЧАСТНИКИ ПРОЕКТА
+                        УЧАСТНИКИ ПРОЕКТА ({members.length})
                     </Typography>
                     <List disablePadding>
-                        {MOCK_MEMBERS.map((member) => (
-                            <ListItem 
-                                key={member.id} 
-                                disablePadding 
-                                sx={{ py: 1, '&:hover .delete-btn': { opacity: 1 } }}
-                            >
+                         {members.map((member, index) => (
+    <motion.div
+      key={member.userId}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.1 + index * 0.05 }} 
+    >
+                            <ListItem key={member.userId} disablePadding sx={{ py: 1, '&:hover .delete-btn': { opacity: 1 } }}>
                                 <Avatar sx={{ width: 32, height: 32, mr: 2, bgcolor: member.isMe ? '#818cf8' : 'rgba(255,255,255,0.1)' }}>
                                     {member.email.charAt(0).toUpperCase()}
                                 </Avatar>
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: member.isMe ? 700 : 500 }}>
+                                <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                                    <Typography 
+                                        variant="body2" 
+                                        noWrap
+                                        sx={{ fontWeight: member.isMe ? 700 : 500 }}
+                                        >
                                         {member.email} {member.isMe && <Chip label="Вы" size="small" sx={{ height: '16px', fontSize: '0.6rem', ml: 1, bgcolor: 'rgba(129, 140, 248, 0.2)', color: '#818cf8' }} />}
                                     </Typography>
                                 </Box>
                                 
-                                {member.role === 'owner' ? (
+                                {member.role === 'Owner' ? (
                                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', pr: 2 }}>Владелец</Typography>
                                 ) : (
                                     <Stack direction="row" alignItems="center">
                                         <Select
-                                            size="small"
+                                            size="small"    
                                             value={member.role}
                                             variant="standard"
                                             disableUnderline
-                                            sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', mr: 1, '& .MuiSvgIcon-root': { color: 'rgba(255,255,255,0.5)' } }}
+                                            disabled={!amIOwner}
+                                            onChange={(e) => handleUpdateRole(member.userId, e.target.value)}
+                                            sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', mr: 1 }}
                                         >
-                                            <MenuItem value="viewer">Чтение</MenuItem>
-                                            <MenuItem value="editor">Редактор</MenuItem>
+                                            <MenuItem value="Viewer">Чтение</MenuItem>
+                                            <MenuItem value="Editor">Редактор</MenuItem>
                                         </Select>
-                                        <IconButton size="small" className="delete-btn" sx={{ opacity: 0, transition: '0.2s', color: '#f87171' }}>
-                                            <DeleteOutlineIcon fontSize="small" />
-                                        </IconButton>
+                                        {amIOwner && (
+                                            <IconButton size="small" className="delete-btn" onClick={() => handleRemoveMember(member.userId)} sx={{ opacity: 0, transition: '0.2s', color: '#f87171' }}>
+                                                <DeleteOutlineIcon fontSize="small" />
+                                            </IconButton>
+                                        )}
                                     </Stack>
                                 )}
                             </ListItem>
-                        ))}
-                    </List>
+                    </motion.div>
+  ))}
+</List>
                 </Box>
             </DialogContent>
-        </Dialog>
+        </MotionDialog>
     );
 }
 

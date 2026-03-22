@@ -11,6 +11,9 @@ public class CreateProjectDto
     
     public string Iv { get; set; } = string.Empty;
     
+    public string EncryptedProjectKey { get; set; } 
+    public string ProjectKeyIv { get; set; } = string.Empty;
+    
     public bool IsPublic { get; set; } = false;
     
     [Required]

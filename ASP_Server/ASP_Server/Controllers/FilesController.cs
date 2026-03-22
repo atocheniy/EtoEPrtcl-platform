@@ -84,7 +84,8 @@ public class FilesController : ControllerBase
             .Include(f => f.Tags)
             .Include(f => f.LinksFrom)
             .Include(f => f.Project)
-            .FirstOrDefaultAsync(f => f.Id == id && f.Project.UserId == userId);
+            .FirstOrDefaultAsync(f => f.Id == id && _context.ProjectMembers
+                .Any(pm => pm.ProjectId == f.ProjectId && pm.UserId == userId && (pm.Role == "Owner" || pm.Role == "Editor")));
         if (file == null) return NotFound("Файл не найден");
         
         if (model.Tags != null)

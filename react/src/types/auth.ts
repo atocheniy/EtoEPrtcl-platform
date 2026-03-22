@@ -7,17 +7,28 @@ export interface RegisterInfo {
     email: string;
     password: string;
     fullName?: string;
+
     signingPublicKey: string;
     encryptedSigningPrivateKey: string; 
     signingKeyIv: string; 
+
+    exchangePublicKey: string;           
+    encryptedExchangePrivateKey: string; 
+    exchangeKeyIv: string;   
+
     signSalt: string;
     theme: ApplicationTheme;
 }
 
 export interface AuthResponse {
     token: string;
+
     encryptedSigningPrivateKey: string;
     signingKeyIv: string;
+
+    encryptedExchangePrivateKey: string; 
+    exchangeKeyIv: string;
+
     message?: string; 
     salt: string;
 }
@@ -71,6 +82,9 @@ export interface Project {
     isPublic: boolean;
     priority: ProjectPriority;
     status: ProjectStatus;
+    encryptedProjectKey: string;
+    keyIv: string;
+    role: string;
 }
 
 export const ProjectPriority = {

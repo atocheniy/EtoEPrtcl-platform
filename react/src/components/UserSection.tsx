@@ -6,21 +6,38 @@ import { AuthService } from '../services/authService';
 import { DCrypto } from '../services/cryptoService';
 import { useEncryption } from './context/EncryptionContext';
 import { ColorSettingsDialog } from './ui/ColorSettingsDialog';
+import { AnimatePresence, motion } from 'framer-motion';
+import {Paper } from '@mui/material';
+import { MotionPopover } from './ui/MotionPopover';
 
 const menuAnimation = {
-    initial: {
-        opacity: 0,
-        scale: 0.96,
-    },
-    animate: {
-        opacity: 1,
-        scale: 1,
-    },
-    exit: {
-        opacity: 0,
-        scale: 0.96,
-    },
+  initial: { 
+    opacity: 0, 
+    scale: 0.52, 
+    filter: 'blur(20px)',
+    y: 10 
+  },
+  animate: { 
+    opacity: 1, 
+    scale: 1, 
+    filter: 'blur(0px)',
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 300,
+      damping: 25,
+      duration: 0.3
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    scale: 0.52, 
+    filter: 'blur(20px)', 
+    transition: { duration: 0.2 } 
+  }
 };
+
+
 
 const menuTransition = {
     duration: 0.18,
@@ -48,6 +65,8 @@ export const UserSection = () => {
         logout(); 
         // AuthService.logout();
     };
+
+    const MotionPaper = motion(Paper);
     
 
     return (
@@ -84,31 +103,14 @@ export const UserSection = () => {
                 </Box>
             </Box>
 
-            <Popover
-            open={open}
-            anchorEl={anchorEl}
-            onClose={handleClose}
-            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            PaperProps={{
-                component: Box,
-                variants: menuAnimation,
-                initial: 'initial',
-                animate: 'animate',
-                exit: 'exit',
-                transition: menuTransition,
-                sx: {
-                    borderRadius: '16px',
-                    minWidth: 200,
-                    background: 'rgba(43, 43, 43, 0.88)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-                    border: '1px solid rgba(75, 75, 75, 1)',
-                    overflow: 'hidden',
-                },
-            }}
-        >
+         <MotionPopover
+                open={open}
+                anchorEl={anchorEl}
+                onClose={() => setAnchorEl(null)}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            >
+            
             <List disablePadding>
                 <ListItemButton onClick={() => {handleClose(); navigate('/user_profile')}} sx={{
                 mx: 1,
@@ -160,7 +162,7 @@ export const UserSection = () => {
                     <ListItemText primary="Выйти" onClick={() => {handleClose(); handleLogout(); navigate('/login')}} />
                 </ListItemButton>
             </List>
-        </Popover>
+       </MotionPopover>
         <ColorSettingsDialog open={openColorDialog} onClose={() => setOpenColorDialog(false)} />
         </>
     );

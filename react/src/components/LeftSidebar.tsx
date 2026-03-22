@@ -11,6 +11,7 @@ import { useEncryption } from './context/EncryptionContext.tsx';
 import { SidebarWrapper } from './SidebarWrapper.tsx';
 import { listVariants, type FileItem } from '../types/auth.ts';
 import $api from '../api/axios.ts';
+import { MotionDialog } from './ui/MotionDialog.tsx';
 
 const MotionPaper = motion.div;
 
@@ -64,11 +65,20 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
         if (!projectName || !masterKey) return;
 
         try {
-            const encrypted = await DCrypto.encrypt(projectName, masterKey);
+            const projectKey = await DCrypto.generateProjectKey();
+            const rawProjectKey = await DCrypto.exportProjectKey(projectKey);
+
+            const encryptedName = await DCrypto.encrypt(projectName, projectKey);
+
+            // const encrypted = await DCrypto.encrypt(projectName, masterKey);
+
+            const wrappedKey = await DCrypto.encrypt(rawProjectKey, masterKey);
 
             const newProject = await ProjectService.createProject({
-                name: encrypted.content,
-                iv: encrypted.iv
+                name: encryptedName.content,  
+                iv: encryptedName.iv, 
+                encryptedProjectKey: wrappedKey.content,
+                projectKeyIv: wrappedKey.iv
             });
             
             //setProjects(prev => [...prev, { ...newProject, name: projectName }]);
@@ -81,19 +91,35 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
   };
 
   const loadGlobalGraph = async () => {
-    if (!masterKey) return;
+    if (!masterKey || projects.length === 0) return;
     
     try {
+      const projectKeyring = new Map<string, CryptoKey>();
+      await Promise.all(projects.map(async (p: any) => {
+            try {
+                const rawKeyBase64 = await DCrypto.decrypt(p.encryptedProjectKey, p.keyIv, masterKey);
+                const pKey = await DCrypto.importProjectKey(rawKeyBase64);
+                projectKeyring.set(p.id, pKey);
+            } catch (e) {
+                console.warn(`Не удалось подготовить ключ для проекта ${p.name}`);
+            }
+        }));
+
       const response = await $api.get<any[]>('/files/all');
       
       const decryptedFiles = await Promise.all(response.data.map(async f => {
         try {
-          const name = await DCrypto.decrypt(f.name, f.iv, masterKey);
-           const rawTags = f.tags || [];
+           const pKey = projectKeyring.get(f.projectId);
+           if (!pKey) {
+              const legacyName = await DCrypto.decrypt(f.name, f.iv, masterKey);
+              return { ...f, name: legacyName + " (Legacy)" };
+           }
+           const name = await DCrypto.decrypt(f.name, f.iv, pKey);
+             const rawTags = f.tags || f.Tags || [];
                 const decryptedTags = await Promise.all(rawTags.map(async (t: any) => {
                     try {
-                        const decryptedName = await DCrypto.decrypt(t.encryptedName || t.EncryptedName, t.iv || t.Iv, masterKey);
-                        return { index: t.index || t.Index, decryptedName };
+                        const dName = await DCrypto.decrypt(t.encryptedName || t.EncryptedName, t.iv || t.Iv, pKey);
+                        return { ...t, decryptedName: dName };
                     } catch { return null; }
                 }));
 
@@ -192,28 +218,13 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
             }}
             >
           </SidebarWrapper>
-          <Dialog open={openDialog} onClose={handleCloseDialog}  slotProps={{
-    backdrop: {
-      sx: {
-        backdropFilter: 'blur(4px)',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      },
-      
-    },
-    
-  }}
-  PaperProps={{
-    sx: {
-      borderRadius: '20px !important',
-      bgcolor: 'rgba(12, 12, 12, 0.7) !important', 
-      background: 'rgba(27, 27, 27, 0.7) !important', 
-      backdropFilter: 'blur(12px) !important', 
-      border: '1px solid rgba(255, 255, 255, 0.1) !important', 
-      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5) !important', 
-      color: 'white !important', 
-      minWidth: '400px !important', 
-    }
-  }}>
+          <MotionDialog 
+                      open={openDialog} 
+                      onClose={handleCloseDialog}
+                      maxWidth="sm"
+                      fullWidth
+                  >  
+          
           <DialogTitle sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
     Новый проект
   </DialogTitle>
@@ -259,7 +270,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
       Создать
     </Button>
         </DialogActions>
-      </Dialog>
+      </MotionDialog>
     </MotionPaper>
   );
 }

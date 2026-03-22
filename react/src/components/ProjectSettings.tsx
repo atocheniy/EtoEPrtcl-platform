@@ -11,6 +11,7 @@ import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { textFieldStyle, whiteSolidButton } from './css/sx';
 
 import { ProjectPriority, ProjectStatus, type Project } from "../types/auth";
+import { MotionTextField } from './ui/MotionTextField';
 
 interface ProjectSettingsProps {
     projectData: { id: string; name: string; iv: string, isPublic: boolean, priority: ProjectPriority, status: ProjectStatus };
@@ -84,34 +85,30 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
                 </Box>
 
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                    <TextField
-                        select
-                        fullWidth
-                        label="Статус"
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value as ProjectStatus)}
-                        sx={selectStyle}
-                        SelectProps={{ MenuProps: menuPropsStyle }}
-                    >
+
+                    <MotionTextField
+    label="Статус"
+    value={status}
+    onChange={setStatus}
+    sx={selectStyle}
+>
                         <MenuItem value={ProjectStatus.Planning} sx={{ gap: 1.5, py: 1, mx: 0.5, borderRadius: '10px', }}>Планирование</MenuItem>
                         <MenuItem value={ProjectStatus.Active} sx={{ gap: 1.5, py: 1, mt: 0.5, mx: 0.5, borderRadius: '10px', }}>В работе</MenuItem>
                         <MenuItem value={ProjectStatus.Hold} sx={{ gap: 1.5, py: 1, mt: 0.5, mx: 0.5, borderRadius: '10px', }}>На паузе</MenuItem>
                         <MenuItem value={ProjectStatus.Completed} sx={{ gap: 1.5, py: 1, mt: 0.5, mx: 0.5, borderRadius: '10px', }}>Завершен</MenuItem>
-                    </TextField>
+                    </MotionTextField>
 
-                    <TextField
-                        select
-                        fullWidth
-                        label="Приоритет"
-                        value={priority}
-                        onChange={(e) => setPriority(e.target.value as ProjectPriority)}
-                        sx={selectStyle}
-                        SelectProps={{ MenuProps: menuPropsStyle }}
-                    >
+<MotionTextField
+    label="Приоритет"
+    value={priority}
+    onChange={setPriority}
+    sx={selectStyle}
+>
+
                         <MenuItem value={ProjectPriority.Low} sx={{ gap: 1.5, py: 1, mx: 0.5, borderRadius: '10px', }}>Низкий</MenuItem>
                         <MenuItem value={ProjectPriority.Medium} sx={{ gap: 1.5, py: 1, mt: 0.5, mx: 0.5, borderRadius: '10px', }}>Средний</MenuItem>
                         <MenuItem value={ProjectPriority.High} sx={{ gap: 1.5, py: 1, mt: 0.5, mx: 0.5, borderRadius: '10px', }}>Высокий</MenuItem>
-                    </TextField>
+                    </MotionTextField>
                 </Stack>
 
                 <Paper sx={{ 

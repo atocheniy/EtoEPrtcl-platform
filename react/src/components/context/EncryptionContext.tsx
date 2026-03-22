@@ -11,12 +11,17 @@ interface InitKeysResult {
     publicKey: string;
     encryptedPrivateKey: string;
     iv: string;
+    exchangePublicKey: string;
+    encryptedExchangePrivateKey: string;
+    exchangeKeyIv: string;
     salt: string;
 }
 
 interface EncryptionContextType {
     masterKey: CryptoKey | null;
     signingKey: CryptoKey | null;
+    exchangeKey: CryptoKey | null;
+    currentProjectKey: CryptoKey | null;
 
     userData: User | { fullName: 'Загрузка...', email: '', salt: '' };
     refreshUserData: () => Promise<void>;
@@ -28,12 +33,12 @@ interface EncryptionContextType {
 
     projectFiles: FileItem[];
     setProjectFiles: React.Dispatch<React.SetStateAction<FileItem[]>>;
-    refreshProjectFiles: (projectId: string) => Promise<void>;
+    refreshProjectFiles: (projectId: string, pKey: CryptoKey) => Promise<void>;
 
     setMasterKey: React.Dispatch<React.SetStateAction<CryptoKey | null>>;
     setSigningKey: (key: CryptoKey | null) => void;
-    initKeysForRegister: (password: string, email: string) => Promise<{ publicKey: string, encryptedPrivateKey: string, iv: string, salt: string;}>;
-    initKeysForLogin: (password: string, salt: string, encKey: string, iv: string) => Promise<void>;
+    initKeysForRegister: (password: string) => Promise<{ publicKey: string, encryptedPrivateKey: string, iv: string, salt: string; exchangePublicKey: string, encryptedExchangePrivateKey: string,  exchangeKeyIv: string}>;
+    initKeysForLogin: (password: string, salt: string, encKey: string, iv: string,  encExchangeKey: string, exchangeIv: string) => Promise<void>;
 
     currentProjectId: string | null;
 
@@ -54,8 +59,12 @@ const EncryptionContext = createContext<EncryptionContextType | null>(null);
 export const EncryptionProvider = ({ children }: { children: React.ReactNode }) => {
     const [masterKey, setMasterKey] = useState<CryptoKey | null>(null);
     const [signingKey, setSigningKey] = useState<CryptoKey | null>(null);
+    const [exchangeKey, setExchangeKey] = useState<CryptoKey | null>(null);
+    const [currentProjectKey, setCurrentProjectKey] = useState<CryptoKey | null>(null);
+    
     const [userData, setUserData] = useState<User>({ fullName: 'Загрузка...', email: '', salt: '', orbColor1: 'rgba(0, 0, 0, 0)', orbColor2: 'rgba(0, 0, 0, 0)', theme: ApplicationTheme.Auto });
-    const [projectData, setProjectData] = useState<Project>({ id: "123", name: 'Загрузка...', iv: "123", isPublic: false, priority: "Low", status: "Active"});
+    const [projectData, setProjectData] = useState<Project>({ id: "123", name: 'Загрузка...', iv: "123", isPublic: false, priority: "Low", status: "Active", encryptedProjectKey: "", keyIv: "", role: 'Viewer'});
+    
     const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
     const [projects, setProjects] = useState<Project[]>([]);
@@ -96,9 +105,28 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
         if (!masterKey) return;
         try {
             const data = await ProjectService.getProjects();
+            const myExchangePrivateKey = await DCrypto.loadKeyFromStorage("exchange_private_key");
             const decryptedProjects = await Promise.all(data.map(async (p: any) => {
                 try {
-                    const clearName = await DCrypto.decrypt(p.name, p.iv, masterKey);
+                    let rawProjectKeyBase64: string;
+
+                    if (p.keyIv === "RSA" || p.KeyIv === "RSA") {
+                    if (!myExchangePrivateKey) throw new Error("RSA key missing");
+                        rawProjectKeyBase64 = await DCrypto.unwrapProjectKeyWithRSA(
+                            p.encryptedProjectKey || p.EncryptedProjectKey, 
+                            myExchangePrivateKey
+                        );
+                    } else {
+                        rawProjectKeyBase64 = await DCrypto.decrypt(
+                            p.encryptedProjectKey || p.EncryptedProjectKey, 
+                            p.keyIv || p.KeyIv, 
+                            masterKey
+                        );
+                    }
+
+                    const pKey = await DCrypto.importProjectKey(rawProjectKeyBase64);
+
+                    const clearName = await DCrypto.decrypt(p.name, p.iv, pKey);
                     return { ...p, name: clearName };
                 } catch (e) {
                     return { ...p, name: "Ошибка расшифровки" };
@@ -110,18 +138,19 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
         }
     };
 
-    const refreshProjectFiles = async (projectId: string) => {
+    const refreshProjectFiles = async (projectId: string, pKey: CryptoKey) => {
         if (!masterKey) return;
         try {
             const response = await $api.get<any[]>(`/files/project/${projectId}`);
             const decryptedFiles = await Promise.all(response.data.map(async f => {
                 try {
-                    const name = await DCrypto.decrypt(f.name, f.iv, masterKey);
+                    const name = await DCrypto.decrypt(f.name, f.iv, pKey);
+                    // const name = await DCrypto.decrypt(f.name, f.iv, masterKey);
                     
                     const rawTags = f.tags || [];
                     const decryptedTags = await Promise.all(rawTags.map(async (t: any) => {
                         try {
-                            return await DCrypto.decrypt(t.encryptedName, t.iv, masterKey);
+                            return await DCrypto.decrypt(t.encryptedName, t.iv, pKey);
                         } catch { return null; }
                     }));
 
@@ -135,9 +164,9 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     };
 
     const refreshProjectData = async () => {
-        if (currentProjectId && masterKey) {
+        if (currentProjectId && masterKey && currentProjectKey) {
             const data = await ProjectService.getProjectById(currentProjectId);
-            const clearName = await DCrypto.decrypt(data.name, data.iv, masterKey);
+            const clearName = await DCrypto.decrypt(data.name, data.iv, currentProjectKey);
             setProjectData({ ...data, name: clearName });
         }
     };
@@ -156,30 +185,70 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
             iv: "123", 
             isPublic: false, 
             priority: "Low", 
-            status: "Active"
+            status: "Active",
+            encryptedProjectKey: "",
+            keyIv: "",
+            role: "",
         });
     };
 
     useEffect(() => {
-        if(currentProjectId && masterKey){
+        const token = localStorage.getItem('token');
+
+        if(currentProjectId && masterKey && token){
             ProjectService.getProjectById(currentProjectId).then( async data => {    
-                const clearName = await DCrypto.decrypt(data.name, data.iv, masterKey);
+                try {
+                let rawProjectKeyBase64: string;
+
+                if (data.keyIv === "RSA") {
+                    console.log("Доступ к проекту через RSA (Гость)");
+                    const myExchangePrivateKey = await DCrypto.loadKeyFromStorage("exchange_private_key");
+                    if (!myExchangePrivateKey) throw new Error("RSA ключ не найден");
+
+                    rawProjectKeyBase64 = await DCrypto.unwrapProjectKeyWithRSA(
+                        data.encryptedProjectKey, 
+                        myExchangePrivateKey
+                    );
+                } else {
+                    console.log("Доступ к проекту через MasterKey");
+                    rawProjectKeyBase64 = await DCrypto.decrypt(
+                        data.encryptedProjectKey, 
+                        data.keyIv, 
+                        masterKey 
+                    );
+                }
+
+                const pKey = await DCrypto.importProjectKey(rawProjectKeyBase64);
+                setCurrentProjectKey(pKey);
+
+                const clearName = await DCrypto.decrypt(data.name, data.iv, pKey);
+
                 setProjectData({
                         id: data.id,      
                         name: clearName,  
                         iv: data.iv,
                         isPublic: data.isPublic,
                         priority: data.priority,
-                        status: data.status
+                        status: data.status,
+                        encryptedProjectKey: data.encryptedProjectKey, 
+                        keyIv: data.keyIv,
+                        role: data.role
                     });
-            }).catch(err => console.error(err));
 
-            refreshProjectFiles(currentProjectId);
-        } else { setProjectFiles([]); }
+                refreshProjectFiles(currentProjectId, pKey);
+            } catch (cryptoErr) {
+                console.error("ОШИБКА ДЕШИФРОВКИ КЛЮЧА ПРОЕКТА:", cryptoErr);
+                setProjectData(prev => ({ ...prev, name: "Ошибка доступа" }));
+            }
+        });
+
+        } else { setProjectFiles([]); if (!currentProjectId) setCurrentProjectKey(null); }
    }, [currentProjectId, masterKey])
 
     useEffect(() => {
-        if (masterKey && signingKey) { 
+        const token = localStorage.getItem('token');
+
+        if (masterKey && signingKey && token) { 
             refreshProjects();
             refreshUserData();
         }
@@ -213,23 +282,40 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
         const packed = await DCrypto.packPrivateKey(keyPair.privateKey, mKey);
         const pubKey = await DCrypto.exportPublicKey(keyPair.publicKey);
 
-        return { publicKey: pubKey, encryptedPrivateKey: packed.encryptedKey, iv: packed.iv , salt: salt};
+        const exchangeKeyPair = await DCrypto.generateExchangeKeyPair();
+        await DCrypto.saveKeyToStorage(exchangeKeyPair.privateKey, "exchange_private_key");
+        const packedExchange = await DCrypto.packPrivateKey(exchangeKeyPair.privateKey, mKey);
+        const pubPackedExchange = await DCrypto.exportPublicKey(exchangeKeyPair.publicKey);
+        
+        return { publicKey: pubKey, encryptedPrivateKey: packed.encryptedKey, iv: packed.iv , exchangePublicKey: pubPackedExchange, encryptedExchangePrivateKey: packedExchange.encryptedKey,  exchangeKeyIv: packedExchange.iv, salt: salt};
     };
 
-    const initKeysForLogin = async (password: string, salt: string, encKey: string, iv: string) => {
+    const initKeysForLogin = async (password: string, salt: string, encKey: string, iv: string, encExchangeKey: string, exchangeIv: string) => {
 
         const mKey = await DCrypto.deriveMasterKey(password, salt);
         setMasterKey(mKey);
         await DCrypto.saveKeyToStorage(mKey, "master_key");
 
-        const sKey = await DCrypto.unpackPrivateKey(encKey, iv, mKey);
+        const sKey = await DCrypto.unpackPrivateKey(encKey, iv, mKey, 'signing');
         setSigningKey(sKey);
         await DCrypto.saveKeyToStorage(sKey, "signing_key");
+
+
+        if (!encExchangeKey || !exchangeIv) {
+            console.warn("У пользователя отсутствуют ключи обмена");
+            alert("Отсутствуют ключи обмена")
+            return; 
+        }
+
+        const exKey = await DCrypto.unpackPrivateKey(encExchangeKey, exchangeIv, mKey, 'exchange');
+        setExchangeKey(exKey);
+        await DCrypto.saveKeyToStorage(exKey, "exchange_private_key");
     };
 
     const logout = () => {
         setMasterKey(null);
         setSigningKey(null);
+        setExchangeKey(null);
 
         setUserData({ 
             fullName: 'Загрузка...', 
@@ -248,7 +334,7 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     };
 
     return (
-        <EncryptionContext.Provider value={{ masterKey, signingKey, userData, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
+        <EncryptionContext.Provider value={{ masterKey, signingKey, exchangeKey, currentProjectKey, userData, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
             {children}
         </EncryptionContext.Provider>
     );

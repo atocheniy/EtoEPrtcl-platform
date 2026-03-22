@@ -41,4 +41,5 @@ public class Project
     public string UserId { get; set; }
     public ApplicationUser User { get; set; }
     
+    public virtual ICollection<ProjectMember> Members { get; set; } = new List<ProjectMember>();
 }

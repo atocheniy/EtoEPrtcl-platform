@@ -21,5 +21,10 @@ export const UserService = {
 
     async updateTheme(theme: ApplicationTheme) {
         return await $api.patch('/auth/theme', { theme });
+    },
+
+    async searchUser(email: string) {
+        const response = await $api.get(`/auth/search?email=${email}`);
+        return response.data;
     }
 };

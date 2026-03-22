@@ -39,17 +39,25 @@ function RegisterForm() {
         }
 
         try {
-            const keys = await initKeysForRegister(password, email);
+            const keys = await initKeysForRegister(password);
 
             await AuthService.register({
                 email, password, fullName,
+                
                 signingPublicKey: keys.publicKey,
                 encryptedSigningPrivateKey: keys.encryptedPrivateKey,
                 signingKeyIv: keys.iv,
+
                 signSalt: keys.salt,
+
+                exchangePublicKey: keys.exchangePublicKey,
+                encryptedExchangePrivateKey: keys.encryptedExchangePrivateKey,
+                exchangeKeyIv: keys.exchangeKeyIv,
+              
                 theme: ApplicationTheme.Auto
             });
-            navigate('/editor'); 
+
+            navigate('/editor');  
         } catch (err: any) {
             console.error(err);
             setError(err.response?.data?.message || "Ошибка регистрации");

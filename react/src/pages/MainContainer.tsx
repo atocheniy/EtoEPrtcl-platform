@@ -61,11 +61,15 @@ function MainContainer() {
 
     const showSkeleton = (isPending || manualLoading || isFileLoading) && (isPreviewMode || isWorkingWithPreview);
 
+    const { currentProjectKey } = useEncryption();
     const { userData } = useEncryption();
     const { signingKey, setSigningKey } = useEncryption();
      const { orbColors, refreshCurrentProjectId, refreshProjects } = useEncryption();
      const { clearCurrentProjectId } = useEncryption();
      const { projectFiles, setProjectFiles } = useEncryption();
+
+    const { projectData } = useEncryption();
+    const canEdit = projectData.role === 'Owner' || projectData.role === 'Editor';
 
     //! === Refs ===
     const contentPanelRef = useRef<ContentPanelHandle>(null);
@@ -110,23 +114,24 @@ function MainContainer() {
         const contentToSave = contentRef.current;
         const nameToSave = fileNameRef.current;
 
+        if (!activeFileId || !currentProjectKey) return false;
         if (!idToSave || !masterKey || contentToSave === lastSavedContentRef.current) return false;
 
         try {
 
-            const { tags, linkedFileIds } = await TagsService.extractMetadata(contentToSave, projectFiles, masterKey, userData.salt);
+            const { tags, linkedFileIds } = await TagsService.extractMetadata(contentToSave, projectFiles, currentProjectKey, userData.salt);
             const newIvRaw = window.crypto.getRandomValues(new Uint8Array(12));
             
             const encoder = new TextEncoder();
             const encryptedContent = await window.crypto.subtle.encrypt(
                 { name: "AES-GCM", iv: newIvRaw },
-                masterKey,
+                currentProjectKey,
                 encoder.encode(contentToSave)
             );
 
             const encryptedName = await window.crypto.subtle.encrypt(
                 { name: "AES-GCM", iv: newIvRaw },
-                masterKey,
+                currentProjectKey,
                 encoder.encode(nameToSave)
             );
 
@@ -166,14 +171,14 @@ function MainContainer() {
             const response = await $api.get(`/files/${fileId}`);
             const { content, iv, name, tags, links } = response.data;
 
-            if (masterKey && iv) {
+            if (masterKey && iv && currentProjectKey) {
                 try {
                    
-                    const decryptedName = await DCrypto.decrypt(name, iv, masterKey);
-                    const decryptedContent = content ? await DCrypto.decrypt(content, iv, masterKey) : "";
+                    const decryptedName = await DCrypto.decrypt(name, iv, currentProjectKey);
+                    const decryptedContent = content ? await DCrypto.decrypt(content, iv, currentProjectKey) : "";
 
                     const decryptedTags = await Promise.all((tags || []).map(async (t: any) => {
-                        return await DCrypto.decrypt(t.encryptedName, t.iv, masterKey);
+                        return await DCrypto.decrypt(t.encryptedName, t.iv, currentProjectKey);
                     }));
 
                     startTransition(() => {
@@ -314,8 +319,8 @@ function MainContainer() {
         </motion.div>
 
         <div style={{display: "flex", flexDirection: "column", flex: 1, position: 'relative', justifyContent: 'center', alignItems: "center"}}>
-          <ContentPanel ref={contentPanelRef} isPreviewMode={isPreviewMode} activeFileId={activeFileId} content={fileContent} onChange={handleContentChange} isLoading={showSkeleton} saveFile={saveFile} isProjectSettinsOpen={isProjectSettinsOpen} setIsProjectSettinsOpen={setIsProjectSettinsOpen} handleCloseProject={handleCloseProject} onFileSelect={handleFileSelect}/>
-          <TopPanel selected={isPreviewMode} fileName={fileName} isLeftOpen={isLeftSidebarOpen} onLeftToggle={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} isRightOpen={isRightSidebarOpen} onRightToggle={() => setIsRightSidebarOpen(!isRightSidebarOpen)} activeFileId={activeFileId} closeFile={closeFile} 
+          <ContentPanel ref={contentPanelRef} isPreviewMode={isPreviewMode} activeFileId={activeFileId} content={fileContent} onChange={handleContentChange} isLoading={showSkeleton} saveFile={saveFile} isProjectSettinsOpen={isProjectSettinsOpen} setIsProjectSettinsOpen={setIsProjectSettinsOpen} handleCloseProject={handleCloseProject} onFileSelect={handleFileSelect}  readOnly={!canEdit}/>
+          <TopPanel selected={isPreviewMode} fileName={fileName} isLeftOpen={isLeftSidebarOpen} onLeftToggle={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)} isRightOpen={isRightSidebarOpen} onRightToggle={() => setIsRightSidebarOpen(!isRightSidebarOpen)} activeFileId={activeFileId} closeFile={closeFile}
           onToggle={() => {
                 const nextMode = !isPreviewMode;
         

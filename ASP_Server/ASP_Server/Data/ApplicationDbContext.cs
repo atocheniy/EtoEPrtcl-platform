@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<FileLink> FileLinks { get; set; }
     
     public DbSet<Tag> Tags { get; set; }
+    public DbSet<ProjectMember> ProjectMembers { get; set; }
     
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -25,6 +26,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        
+        builder.Entity<ProjectMember>()
+            .HasKey(pm => new { pm.ProjectId, pm.UserId });
+        
+        builder.Entity<ProjectMember>()
+            .HasOne(pm => pm.Project)
+            .WithMany(p => p.Members)
+            .HasForeignKey(pm => pm.ProjectId);
+
+        builder.Entity<ProjectMember>()
+            .HasOne(pm => pm.User)
+            .WithMany()
+            .HasForeignKey(pm => pm.UserId);
         
         builder.Entity<Project>()
             .Property(p => p.Status)

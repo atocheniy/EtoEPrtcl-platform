@@ -13,6 +13,7 @@ import ListIcon from '@mui/icons-material/List';
 import SettingsApplicationsIcon from '@mui/icons-material/SettingsApplications';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEncryption } from './context/EncryptionContext';
+import { MotionMenu } from './ui/MotionMenu';
 
 interface SidebarWrapperProps {
     classnames?: string;
@@ -149,22 +150,15 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
                 <KeyboardArrowDownIcon sx={{ opacity: 0.5 }} />
             </Box>
 
-            <Menu
-                anchorEl={anchorEl}
-                open={openMenu}
-                onClose={handleCloseMenu}
-                PaperProps={{
-                    sx: {
-                        mt: 1,
-                        bgcolor: 'rgba(30, 30, 30, 0.9)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        color: 'white',
-                        minWidth: '180px',
-                        borderRadius: '12px'
-                    }
-                }}
-            >
+<MotionMenu
+  anchorEl={anchorEl}
+  open={openMenu}
+  onClose={handleCloseMenu}
+  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} 
+  transformOrigin={{ vertical: 'top', horizontal: 'center' }} 
+  sx={{ minWidth: '180px', mt: 0.5 }}
+>
+        
                 <MenuItem onClick={handleSelectGraph} sx={{ gap: 1.5, py: 1, mx: 0.5, borderRadius: '10px', }}>
                     <AccountTreeIcon fontSize="small" sx={{ opacity: 0.7,  color: `${orbColors[1].replace(/[\d.]+\)$/g, '0.8)')} !important` }} />
                     <Typography variant="body2">Граф знаний</Typography>
@@ -177,7 +171,7 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
                 </MenuItem>
                 ) : (null)}
                
-            </Menu>
+            </MotionMenu>
 
             {highAction}
 

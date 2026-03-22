@@ -36,6 +36,8 @@ import { FileService } from '../services/fileService.ts';
 
 import FolderIcon from '@mui/icons-material/Folder';
 import { FileTreeItem } from './FileTreeItem.tsx';
+import { MotionMenu } from './ui/MotionMenu.tsx';
+import { MotionDialog } from './ui/MotionDialog.tsx';
 
 const buildFileTree = (items: FileItem[]) => {
     const map = new Map<string, any>();
@@ -94,6 +96,7 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect, projectIdSelected, 
   const [openRenameDialog, setOpenRenameDialog] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const { orbColors } = useEncryption();
+  const { currentProjectKey, clearCurrentProjectId } = useEncryption();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -149,12 +152,12 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect, projectIdSelected, 
 
   const handleRenameSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!menuFile || !newFileName.trim() || !masterKey) return;
+    if (!menuFile || !newFileName.trim() || !masterKey || !currentProjectKey) return;
 
     try {
         const currentIvBuffer = DCrypto.base64ToBuffer(menuFile.iv);
 
-        const encrypted = await DCrypto.encrypt(newFileName, masterKey, currentIvBuffer);
+        const encrypted = await DCrypto.encrypt(newFileName, currentProjectKey, currentIvBuffer);
 
         await FileService.updateFileMetadata(
           menuFile.id, 
@@ -193,7 +196,7 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect, projectIdSelected, 
 
 const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !projectId || !masterKey) return;
+    if (!file || !projectId || !masterKey || !currentProjectKey) return;
 
     const isImage = file.type.startsWith('image/');
     const reader = new FileReader();
@@ -203,8 +206,8 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
             
             const sharedIv = window.crypto.getRandomValues(new Uint8Array(12));
 
-            const encryptedContent = await DCrypto.encrypt(rawText, masterKey, sharedIv);
-            const encryptedName = await DCrypto.encrypt(file.name, masterKey, sharedIv);
+            const encryptedContent = await DCrypto.encrypt(rawText, currentProjectKey, sharedIv);
+            const encryptedName = await DCrypto.encrypt(file.name, currentProjectKey, sharedIv);
 
             const extension = file.name.includes('.') ? `.${file.name.split('.').pop()}` : (isImage ? '.png' : '.md');
 
@@ -249,11 +252,11 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const formData = new FormData(event.currentTarget);
         const fileName = formData.get('fileName') as string;
 
-        if (!fileName || !projectId || !masterKey) return;
+        if (!fileName || !projectId || !masterKey || !currentProjectKey) return;
 
         try {
-          const encrypted = await DCrypto.encrypt(fileName, masterKey);
-          const encryptedContent = await DCrypto.encrypt("", masterKey, DCrypto.base64ToBuffer(encrypted.iv));
+          const encrypted = await DCrypto.encrypt(fileName, currentProjectKey);
+          const encryptedContent = await DCrypto.encrypt("", currentProjectKey, DCrypto.base64ToBuffer(encrypted.iv));
           const response = await $api.post('/files', {
             name: encrypted.content,
             content: encryptedContent.content,
@@ -292,11 +295,11 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const formData = new FormData(event.currentTarget);
         const folderName = formData.get('folderName') as string;
 
-        if (!folderName || !projectId || !masterKey) return;
+        if (!folderName || !projectId || !masterKey || !currentProjectKey) return;
 
         try {
-          const encrypted = await DCrypto.encrypt(folderName, masterKey);
-          const encryptedContent = await DCrypto.encrypt("", masterKey, DCrypto.base64ToBuffer(encrypted.iv));
+          const encrypted = await DCrypto.encrypt(folderName, currentProjectKey);
+          const encryptedContent = await DCrypto.encrypt("", currentProjectKey, DCrypto.base64ToBuffer(encrypted.iv));
           const response = await $api.post('/files', {
             name: encrypted.content,
             content: encryptedContent.content,
@@ -350,7 +353,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
   */
 
   const handleDownloadFile = async () => {
-    if (!menuFile || !masterKey) return;
+    if (!menuFile || !masterKey || !currentProjectKey) return;
 
     try {
         const response = await $api.get(`/files/${menuFile.id}`);
@@ -360,7 +363,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
             console.warn("Файл пуст");
             return;
         }
-        const decryptedContent = await DCrypto.decrypt(content, iv, masterKey);
+        const decryptedContent = await DCrypto.decrypt(content, iv, currentProjectKey);
 
         const blob = new Blob([decryptedContent], { type: 'text/markdown' });
         
@@ -398,7 +401,12 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
               <Button 
           variant="contained"      
           startIcon={<ArrowBackIcon />} 
-          onClick={onBack}
+          onClick={() => 
+          { 
+            closeFile(); 
+            clearCurrentProjectId();
+            onBack(); 
+          }}
             sx={{ 
                 ...whiteSolidButton,
                 m: 1,
@@ -429,7 +437,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 onToggle={toggleFolder}
                 onMenuOpen={handleFileMenuOpen}
                 getIcon={getIcon}
-                masterKey={masterKey}
+                masterKey={currentProjectKey}
                 orbColors={orbColors}
             />
         ))}
@@ -452,7 +460,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 onToggle={toggleFolder}
                 onMenuOpen={handleFileMenuOpen}
                 getIcon={getIcon}
-                masterKey={masterKey}
+                masterKey={currentProjectKey}
                 orbColors={orbColors}
             />
         ))}
@@ -477,25 +485,14 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         >
           Создать элемент
         </Button>
-        <Menu
-            anchorEl={createAnchorEl}
-            open={Boolean(createAnchorEl)}
-            onClose={handleCloseCreateMenu}
-            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-            transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-           PaperProps={{
-                    sx: {
-                        bgcolor: 'rgba(20, 20, 20, 0.46)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        color: 'white',
-                        minWidth: '180px',
-                        borderRadius: '12px',
-                         boxShadow: '0 10px 40px rgba(0,0,0,0.5)', 
-                        transform: 'translateY(-12px) !important',
-                    }
-                }}
-        >
+        <MotionMenu
+  anchorEl={createAnchorEl}
+  open={Boolean(createAnchorEl)}
+  onClose={handleCloseCreateMenu}
+  anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+  transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+  sx={{ minWidth: '200px', mb: 1.5 }}
+>
             <MenuItem onClick={() => { handleOpenGlobalCreate(false); handleCloseCreateMenu(); }} sx={{ gap: 1.5, py: 1, mx: 0.5, borderRadius: '10px', }}>
                 <DescriptionIcon fontSize="small" sx={{ opacity: 0.7 }} />
                 <Typography variant="body2">Файл</Typography>
@@ -504,7 +501,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 <FolderIcon fontSize="small" sx={{ opacity: 0.7 }} />
                 <Typography variant="body2">Папка</Typography>
             </MenuItem>
-        </Menu>
+        </MotionMenu>
         </>
      }
      secondBottomAction={
@@ -533,28 +530,13 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       >
     </SidebarWrapper>
 
-    <Dialog open={openDialog} onClose={handleCloseDialog}  slotProps={{
-    backdrop: {
-      sx: {
-        backdropFilter: 'blur(4px)',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      },
-      
-    },
-    
-  }}
-  PaperProps={{
-    sx: {
-      borderRadius: '20px !important',
-      bgcolor: 'rgba(12, 12, 12, 0.7) !important', 
-      background: 'rgba(27, 27, 27, 0.7) !important', 
-      backdropFilter: 'blur(12px) !important', 
-      border: '1px solid rgba(255, 255, 255, 0.1) !important', 
-      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5) !important', 
-      color: 'white !important', 
-      minWidth: '400px !important', 
-    }
-  }}>
+<MotionDialog 
+                      open={openDialog} 
+                      onClose={handleCloseDialog}
+                      maxWidth="sm"
+                      fullWidth
+                  >  
+   
           <DialogTitle sx={{ fontWeight: 600, fontSize: '1.2rem', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1.5, textAlign: 'center' }}>
     {isCreatingFolder ? <FolderIcon sx={{mb: 0.1, color: orbColors[1].replace(/[\d.]+\)$/g, '1)')}}/> : <DescriptionIcon sx={{mb: 0.1}}/>}
     {isCreatingFolder ? "Новая Папка" : "Новый Файл"}
@@ -642,30 +624,15 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       Создать
     </Button>
         </DialogActions>
-      </Dialog>
+      </MotionDialog>
 
-      <Dialog open={openFolderDialog} onClose={handleCloseFolderDialog}  slotProps={{
-    backdrop: {
-      sx: {
-        backdropFilter: 'blur(4px)',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      },
-      
-    },
-    
-  }}
-  PaperProps={{
-    sx: {
-      borderRadius: '20px !important',
-      bgcolor: 'rgba(12, 12, 12, 0.7) !important', 
-      background: 'rgba(27, 27, 27, 0.7) !important', 
-      backdropFilter: 'blur(12px) !important', 
-      border: '1px solid rgba(255, 255, 255, 0.1) !important', 
-      boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5) !important', 
-      color: 'white !important', 
-      minWidth: '400px !important', 
-    }
-  }}>
+ <MotionDialog 
+                      open={openFolderDialog} 
+                      onClose={handleCloseFolderDialog}
+                      maxWidth="sm"
+                      fullWidth
+                  >  
+     
           <DialogTitle sx={{ fontWeight: 600, fontSize: '1.2rem', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1.5, textAlign: 'center'  }}>
     <FolderIcon sx={{mb: 0.1}}/> Новая Папка
   </DialogTitle>
@@ -711,25 +678,13 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       Создать
     </Button>
         </DialogActions>
-      </Dialog>
+      </MotionDialog>
 
-      <Menu
+<MotionMenu
   anchorEl={fileMenuAnchorEl}
   open={Boolean(fileMenuAnchorEl)}
   onClose={handleFileMenuClose}
-  slotProps={{
-    paper: {
-      sx: {
-        bgcolor: 'rgba(15, 15, 15, 0.9)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '12px',
-        color: 'white',
-        minWidth: '160px',
-        mt: 0.5
-      }
-    }
-  }}
+  sx={{ minWidth: '160px', mt: 0.5 }}
 >
   {menuFile?.isFolder && [
     <MenuItem key="add-file" onClick={() => { 
@@ -766,34 +721,14 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     <DeleteIcon fontSize="small" sx={{ opacity: 0.7 }} />
     <Typography variant="body2">Удалить</Typography>
   </MenuItem>
-</Menu>
+</MotionMenu>
 
-<Dialog 
-        open={openRenameDialog} 
-        onClose={handleCloseRename}
-        slotProps={{
-          backdrop: {
-            sx: {
-              backdropFilter: 'blur(4px)',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            },
-            
-          },
-          
-        }}
-        PaperProps={{
-          sx: {
-            borderRadius: '20px !important',
-            bgcolor: 'rgba(12, 12, 12, 0.7) !important', 
-            background: 'rgba(27, 27, 27, 0.7) !important', 
-            backdropFilter: 'blur(12px) !important', 
-            border: '1px solid rgba(255, 255, 255, 0.1) !important', 
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5) !important', 
-            color: 'white !important', 
-            minWidth: '400px !important', 
-          }
-        }}
-    >
+<MotionDialog 
+                      open={openRenameDialog} 
+                      onClose={handleCloseRename}
+                      maxWidth="sm"
+                      fullWidth
+                  >  
         <DialogTitle sx={{ fontWeight: 600 }}>Переименовать файл</DialogTitle>
         <DialogContent>
             <form onSubmit={handleRenameSubmit} id="rename-form">
@@ -831,7 +766,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 Сохранить
             </Button>
         </DialogActions>
-    </Dialog>
+    </MotionDialog>
       </>
   );
 }

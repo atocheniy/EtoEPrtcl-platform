@@ -22,6 +22,16 @@ public class ApplicationUser : IdentityUser
     public string? SigningKeyIv { get; set; }
     public string? SignSalt {get; set;}
     
+    // Project Key
+    [Required]
+    public string ExchangePublicKey { get; set; } = string.Empty;
+    
+    [Required]
+    public string EncryptedExchangePrivateKey { get; set; } = string.Empty;
+    
+    [Required]
+    public string ExchangeKeyIv { get; set; } = string.Empty;
+    
     [Required]
     public ApplicationTheme Theme { get; set; } = ApplicationTheme.Auto;
     

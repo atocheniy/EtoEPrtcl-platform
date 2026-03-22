@@ -39,6 +39,8 @@ import {Skeleton, Stack } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { MarkdownCommand } from './ToolsPanel';
 import { memo } from 'react';
+import SettingsIcon from '@mui/icons-material/Settings';
+import Button from '@mui/material/Button';
 
 import DescriptionIcon from '@mui/icons-material/Description';
 import ShieldIcon from '@mui/icons-material/Shield';
@@ -55,6 +57,37 @@ import { DCrypto } from '../services/cryptoService';
 import type { Project } from '../types/auth';
 import LinkIcon from '@mui/icons-material/Link';
 import TagIcon from '@mui/icons-material/Tag';
+
+import type { Variants } from 'framer-motion';
+
+const panelVariants: Variants = {
+  initial: { 
+    opacity: 0, 
+    y: 10, 
+    filter: 'blur(10px)', 
+    scale: 0.99 
+  },
+  animate: { 
+    opacity: 1, 
+    y: 0, 
+    filter: 'blur(0px)', 
+    scale: 1,
+    transition: { 
+      duration: 0.3, 
+      ease: "easeOut"
+    } 
+  },
+  exit: { 
+    opacity: 0, 
+    y: -10, 
+    filter: 'blur(10px)', 
+    scale: 0.99,
+    transition: { 
+      duration: 0.2, 
+      ease: "easeIn" 
+    } 
+  }
+};
 
 export const EditorSkeleton = () => {
   return (
@@ -104,15 +137,29 @@ interface ContentPanelProps {
     setIsProjectSettinsOpen: React.Dispatch<React.SetStateAction<boolean>>;
     handleCloseProject: () => void;
     onFileSelect: (fileId: string) => void;
+    readOnly: boolean;
 }
 const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((props, ref) => { 
-   const { isPreviewMode, content, onChange, isLoading, activeFileId, saveFile, isProjectSettinsOpen, setIsProjectSettinsOpen, handleCloseProject, onFileSelect } = props;
+   const { isPreviewMode, content, onChange, isLoading, activeFileId, saveFile, isProjectSettinsOpen, setIsProjectSettinsOpen, handleCloseProject, onFileSelect, readOnly } = props;
    const [value, setValue] = useState(content || "");
     const valueRef = useRef(value);
    const editorWrapperRef = useRef<HTMLDivElement>(null);
    const editorRef = useRef<any>(null);
    const [fontSize, setFontSize] = useState(16);
-   const { projectData, masterKey, isDarkMode, orbColors, refreshProjects, refreshProjectData, projectFiles, setProjectFiles } = useEncryption();
+   const { projectData, masterKey, isDarkMode, orbColors, refreshProjects, refreshProjectData, projectFiles, setProjectFiles, currentProjectId } = useEncryption();
+
+   const { currentProjectKey } = useEncryption();
+    const isProject = Boolean(currentProjectId);
+
+    const glowAnimation = `
+  @keyframes borderPulse {
+    0% { box-shadow: inset 0 0 30px rgba(255,255,255,0.02); }
+    50% { box-shadow: inset 0 0 60px var(--glow-color); }
+    100% { box-shadow: inset 0 0 30px rgba(255,255,255,0.02); }
+  }
+`;
+
+const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
 
    useEffect(() => {
        valueRef.current = value;
@@ -395,6 +442,7 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
     }, [onChange]);
     
     const isImageContent = content.startsWith('data:image/');
+    const showGlow = !activeFileId && !isProjectSettinsOpen;
 
   return (
     <>
@@ -419,8 +467,25 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
       rgba(20, 20, 20, 0.7) 100%)`,
             border: '1px solid rgb(27, 27, 27)',
             overflow: 'hidden',
+            '--glow-color': primaryGlow,
+           '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: 'inherit',
+            pointerEvents: 'none',
+            zIndex: 0,
+            
+            animation: 'borderPulse 8s infinite ease-in-out',
+            
+            opacity: showGlow ? 1 : 0, 
+            transition: 'opacity 1.5s ease-in-out', 
+        }
         }}
-        >
+        ><style>{glowAnimation}</style>
             
              <AnimatePresence>
         {isLoading && (
@@ -440,7 +505,16 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
         )}
       </AnimatePresence>
 
+ <AnimatePresence mode="wait"> 
     {isProjectSettinsOpen ? (
+         <motion.div
+                    key="project-settings" 
+                    variants={panelVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    style={{ width: '100%', height: '100%', overflowY: 'auto' }}
+                >
             <Box sx={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -459,10 +533,10 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
                     setIsProjectSettinsOpen(false); 
                 }} 
                 onSave={ async (updatedData) => {
-                    if (!masterKey) return;
+                    if (!masterKey || !currentProjectKey) return;
 
                      try {
-                        const encrypted = await DCrypto.encrypt(updatedData.name, masterKey);
+                        const encrypted = await DCrypto.encrypt(updatedData.name, currentProjectKey);
 
                         await ProjectService.updateProject({
                             id: updatedData.id,
@@ -495,8 +569,16 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
             />
         )}
     </Box>
+    </motion.div>
     ) : activeFileId ?  
-           ( <div key={activeFileId} ref={editorWrapperRef} data-color-mode="dark" style={{ width: '100%', height: "100%", opacity: isLoading ? 0 : 1, flex: 1, minHeight: 0, transition: 'opacity 0.3s ease', fontSize: `${fontSize}px` }}>
+           (  <motion.div
+                    key={`file-${activeFileId}`}
+                    variants={panelVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
+                > <div key={activeFileId} ref={editorWrapperRef} data-color-mode="dark" style={{ width: '100%', height: "100%", opacity: isLoading ? 0 : 1, flex: 1, minHeight: 0, transition: 'opacity 0.3s ease', fontSize: `${fontSize}px` }}>
 
     {isPreviewMode ? (
     
@@ -556,6 +638,7 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
                 <CodeMirror
                     value={value}
                     ref={editorRef}
+                    readOnly={readOnly}
                     height="100%"
                     theme={githubDark}
                     extensions={extensions}
@@ -575,87 +658,82 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
                 font-size: ${fontSize}px !important;
             }
     `}</style>
-  </div>) : (<Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        height: '100%', 
-        width: '100%',
-        p: 4,
-        zIndex: 1 
-    }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 4, color: 'rgba(255,255,255,0.9)', letterSpacing: -1 }}>
-            Выберите файл для работы
-        </Typography>
+  </div> </motion.div>) : (
+    <motion.div
+                    key="empty-state"
+                    variants={panelVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    style={{ width: '100%', height: '100%' }}
+                >
+    <Box sx={{ 
+            height: '100%', 
+            width: '100%', 
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            '--glow-color': primaryGlow,
+            animation: 'borderPulse 8s infinite ease-in-out',
+            borderRadius: 3, 
+        }}>
+            <style>{glowAnimation}</style>
 
-        <Grid container spacing={3} sx={{ maxWidth: '850px', width: '100%' }}>
-            {[
-                { 
-                    title: 'Редактор', 
-                    desc: 'Полноценная поддержка Markdown с просмотром.', 
-                    icon: <DescriptionIcon sx={{ color: '#818cf8' }} />,
-                    color: 'rgba(129, 140, 248, 0.1)'
-                },
-                { 
-                    title: 'Безопасность', 
-                    desc: 'Данные зашифрованы ключом AES-256 в браузере.', 
-                    icon: <ShieldIcon sx={{ color: '#4ade80' }} />,
-                    color: 'rgba(74, 222, 128, 0.1)'
-                },
-                { 
-                    title: 'Проекты', 
-                    desc: 'Возможность организовать файлы в иерархические структуры.', 
-                    icon: <AutoAwesomeIcon sx={{ color: '#fbbf24' }} />,
-                    color: 'rgba(251, 191, 36, 0.1)'
-                },
-                { 
-                    title: 'Клавиши', 
-                    desc: 'Использование Ctrl+S для сохранения и Ctrl+Alt+P для просмотра.', 
-                    icon: <KeyboardIcon sx={{ color: '#f87171' }} />,
-                    color: 'rgba(248, 113, 113, 0.1)'
-                }
-            ].map((card, index) => (
-                <Grid size={{ xs: 12, sm: 6 }} key={index}>
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            p: 3,
-                            height: '100%',
-                            borderRadius: 5,
-                            bgcolor: 'rgba(255, 255, 255, 0.02)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
-                            backdropFilter: 'blur(10px)',
-                            transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 1.5,
-                            '&:hover': {
-                                bgcolor: 'rgba(255, 255, 255, 0.04)',
-                                borderColor: 'rgba(255, 255, 255, 0.2)',
-                                transform: 'translateY(-5px)',
-                                boxShadow: '0 10px 30px rgba(0,0,0,0.4)'
-                            }
-                        }}
-                    >
-                        <Box sx={{ 
-                            width: 48, height: 48, borderRadius: 3, 
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            bgcolor: card.color
-                        }}>
-                            {card.icon}
-                        </Box>
-                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'white' }}>
-                            {card.title}
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>
-                            {card.desc}
-                        </Typography>
-                    </Paper>
-                </Grid>
-            ))}
-        </Grid>
-    </Box>)}
+            <Box sx={{ 
+                width: '100%', 
+                maxWidth: '1100px', 
+                opacity: 0.3, 
+                userSelect: 'none',
+                pointerEvents: 'none',
+                px: 4
+            }}>
+                <Skeleton animation="wave" variant="text" width="60%" height={60} sx={{ bgcolor: 'rgba(255,255,255,0.1)', mb: 4 }} />
+    
+    <Stack spacing={2.5}>
+        <Box>
+            <Skeleton animation="wave" variant="text" width="100%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Skeleton animation="wave" variant="text" width="95%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Skeleton animation="wave" variant="text" width="40%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+        </Box>
+
+        <Box sx={{ borderLeft: '4px solid rgba(255,255,255,0.1)', pl: 3, my: 2 }}>
+            <Skeleton animation="wave" variant="text" width="80%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+            <Skeleton animation="wave"  variant="text" width="70%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+        </Box>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+            <Skeleton animation="wave" variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: 'rgba(255,255,255,0.08)' }} />
+            <Skeleton animation="wave" variant="text" width="30%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+        </Stack>
+        <Stack direction="row" spacing={2} alignItems="center">
+            <Skeleton animation="wave" variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: 'rgba(255,255,255,0.08)' }} />
+            <Skeleton animation="wave" variant="text" width="50%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+        </Stack>
+
+        <Box sx={{ pt: 2 }}>
+            <Skeleton animation="wave" variant="text" width="100%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+            <Skeleton animation="wave" variant="text" width="85%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+        </Box>
+         <Stack direction="row" spacing={2} alignItems="center">
+            <Skeleton animation="wave" variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: 'rgba(255,255,255,0.08)' }} />
+            <Skeleton animation="wave" variant="text" width="30%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+        </Stack>
+        <Stack direction="row" spacing={2} alignItems="center">
+            <Skeleton animation="wave" variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: 'rgba(255,255,255,0.08)' }} />
+            <Skeleton animation="wave" variant="text" width="50%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+        </Stack>
+
+        <Box sx={{ pt: 2 }}>
+            <Skeleton animation="wave" variant="text" width="100%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+            <Skeleton animation="wave" variant="text" width="85%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+        </Box>
+    </Stack>
+            </Box>
+
+            
+        </Box></motion.div> )}
+         </AnimatePresence>
         </Paper>
 
     </>
