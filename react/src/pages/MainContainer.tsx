@@ -64,7 +64,7 @@ function MainContainer() {
     const { currentProjectKey } = useEncryption();
     const { userData } = useEncryption();
     const { signingKey, setSigningKey } = useEncryption();
-     const { orbColors, refreshCurrentProjectId, refreshProjects } = useEncryption();
+     const { orbColors, refreshCurrentProjectId } = useEncryption();
      const { clearCurrentProjectId } = useEncryption();
      const { projectFiles, setProjectFiles } = useEncryption();
 

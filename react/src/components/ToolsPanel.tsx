@@ -26,7 +26,7 @@ interface ToolsPanelProps {
 
 function ToolsPanel({ onCommand }: ToolsPanelProps) {
 
-    const { mode, theme, currentTheme } = useEncryption();
+    const { mode, currentTheme } = useEncryption();
 
   const buttonStyle = {
         color: currentTheme === ApplicationTheme.Dark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',

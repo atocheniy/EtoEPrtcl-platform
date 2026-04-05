@@ -1,4 +1,3 @@
-import { $api } from "../api/axios";
 import type { FileItem } from "../types/auth";
 import { DCrypto } from "./cryptoService";
 

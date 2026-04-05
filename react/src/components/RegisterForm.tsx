@@ -12,7 +12,6 @@ import { AuthService } from '../services/authService';
 
 import { useNavigate } from 'react-router';
 import { useEncryption } from './context/EncryptionContext';
-import App from '../App';
 import { ApplicationTheme, PerformanceMode } from '../types/auth';
 
 function RegisterForm() {
@@ -65,17 +64,6 @@ function RegisterForm() {
             console.error(err);
             setError(err.response?.data?.message || "Ошибка регистрации");
         }
-    };
-
-    const textFieldStyle = {
-        '& .MuiOutlinedInput-root': {
-            color: 'white',
-            '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-            '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
-            '&.Mui-focused fieldset': { borderColor: '#ffffffff' },
-        },
-        '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
-        '& .MuiInputLabel-root.Mui-focused': { color: '#ffffffff' }
     };
 
   return (

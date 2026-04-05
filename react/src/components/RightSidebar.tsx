@@ -11,12 +11,6 @@ import { useState, useMemo } from 'react';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import ShareProjectDialog from './ShareProjectDialog';
 import * as React from 'react';
-import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
-import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
-import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight';
-import FormatAlignJustifyIcon from '@mui/icons-material/FormatAlignJustify';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import TagIcon from '@mui/icons-material/Tag';
 import LinkIcon from '@mui/icons-material/Link';
 import TitleIcon from '@mui/icons-material/Title';
@@ -26,7 +20,6 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import HistoryIcon from '@mui/icons-material/History';
 
 import {
-  ListItem,
   ListItemButton,
   ListItemText,
   Box,
@@ -54,7 +47,6 @@ const  RightSidebar = React.forwardRef<RightSidebarHandle, RightSidebarProps>((p
     const { content, tags, links, allFiles, onFileSelect, activeFileId, handleRestore } = props;
   // const [selectedIndex, setSelectedIndex] = useState(0);
 
-const [alignment, setAlignment] = React.useState<string | null>('left');
 const { currentTheme } = useEncryption();
 const [history, setHistory] = useState<any[]>([]);
 
@@ -68,13 +60,6 @@ React.useImperativeHandle(ref, () => ({
 }));
 
 const { currentProjectId, projectData } = useEncryption();
-
-  const handleAlignment = (
-    event: React.MouseEvent<HTMLElement>,
-    newAlignment: string | null,
-  ) => {
-    setAlignment(newAlignment);
-  };
 
   const generateSlug = (text: string) => {
     return text

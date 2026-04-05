@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Box, Typography, TextField, MenuItem, 
-    Button, Stack, Divider, Switch, FormControlLabel,
-    ToggleButtonGroup, ToggleButton, Paper
+    Button, Stack, Divider, Switch,
+    Paper
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import LockIcon from '@mui/icons-material/Lock';
 import PublicIcon from '@mui/icons-material/Public';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { textFieldStyle, whiteSolidButton } from './css/sx';
+import { whiteSolidButton } from './css/sx';
 
-import { ApplicationTheme, ProjectPriority, ProjectStatus, type Project } from "../types/auth";
+import { ApplicationTheme, ProjectPriority, ProjectStatus } from "../types/auth";
 import { MotionTextField } from './ui/MotionTextField';
 import { useEncryption } from './context/EncryptionContext';
 
@@ -208,49 +208,5 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
         </Box>
     );
 };    
-
-const menuPropsStyle = {
-    PaperProps: {
-        sx: {
-            borderRadius: '15px',
-            bgcolor: 'rgba(19, 19, 19, 0.58)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            marginTop: '8px',
-            '& .MuiList-root': {
-                padding: '8px',
-            },
-            '& .MuiMenuItem-root': {
-                borderRadius: '10px',
-                margin: '2px 0',
-                color: 'white',
-                '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.08)',
-                },
-                '&.Mui-selected': {
-                    bgcolor: 'rgba(255, 255, 255, 0.15) !important',
-                    color: 'white',
-                    '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.25)',
-                    },
-                },
-            },
-        },
-    },
-};
-
-const selectStyle = {
-    '& .MuiOutlinedInput-root': {
-        borderRadius: '15px',
-        bgcolor: 'rgba(255,255,255,0.03)',
-        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-        '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
-        '&.Mui-focused fieldset': { borderColor: 'white' },
-    },
-    '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' },
-    '& .MuiInputLabel-root.Mui-focused': { color: 'white' },
-    '& .MuiSelect-select': { color: 'white' },
-    '& .MuiSvgIcon-root': { color: 'rgba(255, 255, 255, 0.5)' },
-};
 
 export default ProjectSettings;

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
-    Dialog, DialogTitle, DialogContent, Box, Typography, 
+    DialogTitle, DialogContent, Box, Typography, 
     TextField, Button, Stack, Divider, List, ListItem, 
-    Avatar, IconButton, Select, MenuItem, Chip,
+    Avatar, IconButton, MenuItem, Chip,
     Tooltip
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -16,6 +16,7 @@ import { UserService } from '../services/userService';
 import { ProjectService } from '../services/projectService';
 import { MotionDialog } from './ui/MotionDialog';
 import { motion } from 'framer-motion';
+import { MotionTextField } from './ui/MotionTextField';
 
 interface ShareProjectDialogProps {
     open: boolean;
@@ -24,11 +25,10 @@ interface ShareProjectDialogProps {
 }
 
 export default function ShareProjectDialog({ open, onClose, projectData }: ShareProjectDialogProps) {
-     const { masterKey, currentProjectKey, userData } = useEncryption();
+     const { currentProjectKey } = useEncryption();
      const [inviteEmail, setInviteEmail] = useState("");
      const [inviteRole, setInviteRole] = useState("viewer");
      const [members, setMembers] = useState<any[]>([]);
-     const [loading, setLoading] = useState(false);
 
     const fetchMembers = async () => {
         if (!projectData?.id) return;
@@ -46,7 +46,6 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
 
     const handleAddMember = async () => {
         if (!inviteEmail || !currentProjectKey) return;
-        setLoading(true);
         try {
             const friend = await UserService.searchUser(inviteEmail);
             const rawKey = await window.crypto.subtle.exportKey("raw", currentProjectKey);
@@ -69,8 +68,6 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
             fetchMembers();
         } catch (e: any) {
             alert(e.response?.data || "Ошибка");
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -191,15 +188,18 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                             onChange={(e) => setInviteEmail(e.target.value)}
                             color='secondary'
                         />
-                        <Select
+                        <MotionTextField
                             size="small"
+                            label="Роль"
                             value={inviteRole}
-                            onChange={(e) => setInviteRole(e.target.value)}
-                            sx={selectStyle}
+                            onChange={(val) => setInviteRole(val)} 
+                            color='secondary'
+                            
                         >
-                            <MenuItem value="viewer">Чтение</MenuItem>
-                            <MenuItem value="editor">Редактор</MenuItem>
-                        </Select>
+                            <MenuItem value="viewer" sx={{mb: 0.5, mx: 1, borderRadius: 2}}>Чтение</MenuItem>
+                            <MenuItem value="editor" sx={{mb: 0.5, mx: 1, borderRadius: 2}}>Редактор</MenuItem>
+                        
+                        </MotionTextField>
                         <Button 
                             variant="contained" 
                             sx={whiteSolidButton}
@@ -225,7 +225,7 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
       transition={{ delay: 0.1 + index * 0.05 }} 
     >
                             <ListItem key={member.userId} disablePadding sx={{ py: 1, '&:hover .delete-btn': { opacity: 1 } }}>
-                                <Avatar sx={{ width: 32, height: 32, mr: 2, bgcolor: member.isMe ? '#818cf8' : 'rgba(255,255,255,0.1)' }}>
+                                <Avatar sx={{ width: 32, height: 32, mr: 2, bgcolor: member.isMe ? '#818cf8' : '' }}>
                                     {member.email.charAt(0).toUpperCase()}
                                 </Avatar>
                                 <Box sx={{ flexGrow: 1, minWidth: 0 }}>
@@ -242,18 +242,20 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                                     <Typography variant="caption" sx={{ pr: 2 }}>Владелец</Typography>
                                 ) : (
                                     <Stack direction="row" alignItems="center">
-                                        <Select
-                                            size="small"    
-                                            value={member.role}
-                                            variant="standard"
-                                            disableUnderline
+                                         <MotionTextField
+                                            size="small"
+                                            label="Роль"
+                                            value={member.role.toLowerCase()}
                                             disabled={!amIOwner}
-                                            onChange={(e) => handleUpdateRole(member.userId, e.target.value)}
-                                            sx={{ fontSize: '0.8rem', mr: 1 }}
+                                            onChange={(val) => handleUpdateRole(member.userId, val)}
+                                            color='secondary'
+                                            sx={{ fontSize: '0.8rem', mr: 1, width: '150px' }}
+                                            
                                         >
-                                            <MenuItem value="Viewer">Чтение</MenuItem>
-                                            <MenuItem value="Editor">Редактор</MenuItem>
-                                        </Select>
+                                        
+                                            <MenuItem value="viewer" sx={{mb: 0.5, mx: 1, borderRadius: 2}}>Чтение</MenuItem>
+                                            <MenuItem value="editor" sx={{mb: 0.5, mx: 1, borderRadius: 2}}>Редактор</MenuItem>
+                                         </MotionTextField>
                                         {amIOwner && (
                                             <IconButton size="small" className="delete-btn" onClick={() => handleRemoveMember(member.userId)} sx={{ opacity: 0, transition: '0.2s', color: '#f87171' }}>
                                                 <DeleteOutlineIcon fontSize="small" />
@@ -270,25 +272,3 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
         </MotionDialog>
     );
 }
-
-const inputStyle = {
-    '& .MuiOutlinedInput-root': {
-        borderRadius: '10px',
-        bgcolor: 'rgba(255,255,255,0.03)',
-        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
-        '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-        '&.Mui-focused fieldset': { borderColor: '#818cf8' },
-        '& input': { color: 'white', fontSize: '0.9rem' }
-    }
-};
-
-const selectStyle = {
-    borderRadius: '10px',
-    bgcolor: 'rgba(255,255,255,0.03)',
-    color: 'white',
-    fontSize: '0.9rem',
-    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
-    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
-    '&.Mui-focused fieldset': { borderColor: '#818cf8' },
-    '& .MuiSvgIcon-root': { color: 'white' }
-};

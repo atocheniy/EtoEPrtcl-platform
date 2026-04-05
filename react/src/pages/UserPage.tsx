@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
-  Box, Container, Typography, Avatar, Paper, Stack, 
-  Button, Switch, Divider,
+  Box, Typography, Avatar, Paper, Stack, 
+  Button, Divider,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -19,13 +19,12 @@ import AnimatedPage from '../components/AnimatedPage';
 import { useEncryption } from '../components/context/EncryptionContext';
 import { textFieldStyle, whiteSolidButton } from '../components/css/sx';
 import { UserService } from '../services/userService';
-import { ApplicationTheme, type UpdateName } from '../types/auth';
+import { ApplicationTheme } from '../types/auth';
 
 type EditMode = 'name' | 'email' | 'password' | null;
 
 function UserPage() {
   const navigate = useNavigate();
-  const [twoFactor, setTwoFactor] = useState(false);
 
   const { userData } = useEncryption();
   const [loading, setLoading] = useState(false);
@@ -110,7 +109,7 @@ function UserPage() {
             </Avatar>
             <Box textAlign="center">
               <Typography variant="h5" fontWeight={700}>{userData.fullName}</Typography>
-              <Typography variant="body2" color="rgba(255,255,255,0.5)">{userData.email}</Typography>
+              <Typography variant="body2">{userData.email}</Typography>
             </Box>
           </Stack>
 

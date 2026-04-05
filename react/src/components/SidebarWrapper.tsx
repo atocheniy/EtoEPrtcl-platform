@@ -1,15 +1,13 @@
-import { Paper, Divider, Typography, Box, type SxProps, Dialog, IconButton, Button, Menu, MenuItem, type PaperProps } from '@mui/material';
+import { Paper, Divider, Typography, Box, type SxProps, Dialog, IconButton, MenuItem, type PaperProps } from '@mui/material';
 import { UserSection } from './UserSection';
 
 import CloseIcon from '@mui/icons-material/Close';
 import GraphView from './ui/GraphView';
 import { useState } from 'react';
 import { ApplicationTheme, PerformanceMode, type FileItem } from '../types/auth';
-import { whiteSolidButton } from './css/sx';
 
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import ListIcon from '@mui/icons-material/List';
 import SettingsApplicationsIcon from '@mui/icons-material/SettingsApplications';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEncryption } from './context/EncryptionContext';
@@ -36,12 +34,11 @@ interface SidebarWrapperProps {
     variant?: PaperProps['variant']; 
 }
 
-export const SidebarWrapper = ({ classnames, title, highAction, children, topAction, bottomAction, secondBottomAction, customsx, variant, files, projects = [], projectIdSelected, setSelectedId, onFileSelect, onOpenGraph, setIsProjectSettinsOpen, isProjectSettinsOpen, closeFile}: SidebarWrapperProps) => {
+export const SidebarWrapper = ({ classnames, title, highAction, children, topAction, bottomAction, secondBottomAction, customsx, variant, files, projects = [], projectIdSelected, onFileSelect, onOpenGraph, setIsProjectSettinsOpen, isProjectSettinsOpen, closeFile}: SidebarWrapperProps) => {
     const [showGraph, setShowGraph] = useState(false);
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const openMenu = Boolean(anchorEl);
-    const MotionTypography = motion(Typography);
 
     const { orbColors } = useEncryption();
     const { mode, currentTheme } = useEncryption();
@@ -70,8 +67,7 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
     }
 
     const handleFileSelect = (id: string) => {
-        if(setSelectedId && onFileSelect) {
-            setSelectedId(id);
+        if(onFileSelect) {
             onFileSelect(id);
         }
     };

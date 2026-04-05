@@ -1,5 +1,5 @@
 import React, { useState, useRef, type ReactElement } from 'react';
-import { TextField, MenuItem } from '@mui/material';
+import { TextField } from '@mui/material';
 import { MotionMenu } from './MotionMenu';
 import type { TextFieldProps } from '@mui/material/TextField';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';

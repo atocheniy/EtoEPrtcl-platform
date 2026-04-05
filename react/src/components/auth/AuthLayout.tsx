@@ -12,7 +12,7 @@ interface AuthLayoutProps {
 
 const AuthLayout = ({ text, buttonLabel, navigateTo }: AuthLayoutProps) => {
     const navigate = useNavigate();
-    const { theme, currentTheme } = useEncryption();
+    const { currentTheme } = useEncryption();
     return (
         <Paper
             elevation={0}

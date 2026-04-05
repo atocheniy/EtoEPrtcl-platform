@@ -1,10 +1,9 @@
 import React from 'react';
-import { Dialog, Paper, Box, Zoom } from '@mui/material';
+import { Dialog, Paper } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { DialogProps } from '@mui/material/Dialog';
 import { useEncryption } from '../context/EncryptionContext';
 import { ApplicationTheme, PerformanceMode } from '../../types/auth';
-import type { TransitionProps } from '@mui/material/transitions';
 
 const dialogVariants = {
   initial: { opacity: 0, scale: 0.9, y: 15, filter: 'blur(10px)' },

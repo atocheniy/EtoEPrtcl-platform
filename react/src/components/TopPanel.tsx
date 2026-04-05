@@ -11,17 +11,13 @@ import { IconButton, Tooltip } from '@mui/material';
 import CreateIcon from '@mui/icons-material/Create';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SaveIcon from '@mui/icons-material/Save';
-import { Snackbar, Alert } from '@mui/material';
-import Slide from '@mui/material/Slide';
-import type {SlideProps} from '@mui/material/Slide';
 
 import ToggleButton from '@mui/material/ToggleButton';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEncryption } from './context/EncryptionContext';
-import { ApplicationTheme, PerformanceMode } from '../types/auth';
+import { useNotification } from './NotificationContext';
 
 interface TopPanelProps {
     selected: boolean;
@@ -38,35 +34,16 @@ interface TopPanelProps {
 
 
 function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftToggle, isRightOpen, onRightToggle, activeFileId, closeFile}: TopPanelProps) {
-
-  const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
+  const { showSuccess } = useNotification();
 
   const handleSave = async () => {
     setIsSaving(true);
     const success = await onSave();
     if (success) {
-        setOpenSnackbar(true);
+        showSuccess("Файл успешно сохранен!");
     }
     setIsSaving(false);
-  };
-
-  function SlideTransition(props: SlideProps) {
-    return <Slide {...props} 
-      timeout={{ 
-        enter: 500,
-        exit: 400   
-      }} 
-      easing={{
-        enter: 'cubic-bezier(0, 0, 0.2, 1)',
-        exit: 'cubic-bezier(0.4, 0, 1, 1)',
-      }} 
-      direction="left" />;
-  }
-
-  const handleCloseSnackbar = (event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') return;
-    setOpenSnackbar(false);
   };
 
   return (
@@ -192,24 +169,6 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
          </Tooltip>
          </Box>
     </Paper>
-    <Snackbar 
-        open={openSnackbar} 
-        autoHideDuration={3000}
-        slots={{ transition: SlideTransition }}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        key={SlideTransition.name}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity="success" 
-          variant="filled"
-          sx={{ width: '100%', color: "white", borderRadius: '12px' }}
-        >
-          Файл сохранен!
-        </Alert>
-      </Snackbar>
-
     </>
   )
 }

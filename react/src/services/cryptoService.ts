@@ -1,5 +1,3 @@
-    import type { User } from "../types/auth";
-    import { UserService } from "./userService";
 
     const DB_NAME = "CryptoDB";
     const STORE_NAME = "keys";

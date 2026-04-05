@@ -4,7 +4,6 @@ import { ApplicationTheme, PerformanceMode, type FileItem, type Project, type Us
 import { UserService } from '../../services/userService';
 import { ProjectService } from '../../services/projectService';
 import $api from '../../api/axios';
-import App from '../../App';
 import { useMediaQuery } from '@mui/material';
 
 interface InitKeysResult {
@@ -212,7 +211,6 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     };
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
 
         if(currentProjectId){
             ProjectService.getProjectById(currentProjectId).then( async data => {    

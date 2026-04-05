@@ -1,49 +1,11 @@
 import { useState} from 'react';
 import type {MouseEvent } from 'react';
-import { Box, Avatar, Typography, Popover, List, ListItemButton, ListItemText } from '@mui/material';
+import { Box, Avatar, Typography, List, ListItemButton, ListItemText } from '@mui/material';
 import { useNavigate } from 'react-router';
-import { AuthService } from '../services/authService';
-import { DCrypto } from '../services/cryptoService';
 import { useEncryption } from './context/EncryptionContext';
 import { ColorSettingsDialog } from './ui/ColorSettingsDialog';
-import { AnimatePresence, motion } from 'framer-motion';
-import {Paper } from '@mui/material';
 import { ApplicationTheme } from '../types/auth';
 import { MotionMenu } from './ui/MotionMenu';
-
-const menuAnimation = {
-  initial: { 
-    opacity: 0, 
-    scale: 0.52, 
-    filter: 'blur(20px)',
-    y: 10 
-  },
-  animate: { 
-    opacity: 1, 
-    scale: 1, 
-    filter: 'blur(0px)',
-    y: 0,
-    transition: {
-      type: 'spring',
-      stiffness: 300,
-      damping: 25,
-      duration: 0.3
-    }
-  },
-  exit: { 
-    opacity: 0, 
-    scale: 0.52, 
-    filter: 'blur(20px)', 
-    transition: { duration: 0.2 } 
-  }
-};
-
-
-
-const menuTransition = {
-    duration: 0.18,
-    ease: 'easeOut',
-} as const;
 
 export const UserSection = () => {
 
@@ -65,10 +27,7 @@ export const UserSection = () => {
     const handleLogout = async () => {
         logout(); 
         // AuthService.logout();
-    };
-
-    const MotionPaper = motion(Paper);
-    
+    };    
 
     return (
         <>

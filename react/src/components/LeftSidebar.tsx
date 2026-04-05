@@ -1,5 +1,5 @@
-import {useState, useEffect, useMemo} from'react';
-import {List,ListItem,ListItemButton,ListItemIcon,ListItemText, TextField, Button,Dialog,DialogActions,DialogContent,DialogContentText,DialogTitle, Typography} from '@mui/material';
+import {useState, useMemo} from'react';
+import {List,ListItem,ListItemButton,ListItemIcon,ListItemText, TextField, Button,DialogActions,DialogContent,DialogContentText,DialogTitle, Typography} from '@mui/material';
 
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CreateIcon from '@mui/icons-material/Create';
@@ -9,7 +9,7 @@ import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
 import { SidebarWrapper } from './SidebarWrapper.tsx';
-import { ApplicationTheme, listVariants, PerformanceMode, type FileItem } from '../types/auth.ts';
+import { ApplicationTheme, listVariants, type FileItem } from '../types/auth.ts';
 import $api from '../api/axios.ts';
 import { MotionDialog } from './ui/MotionDialog.tsx';
 
@@ -37,7 +37,6 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
   const [allFilesForGraph, setAllFilesForGraph] = useState<FileItem[]>([]);
   // const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
   /*
   useEffect(() => {
@@ -167,7 +166,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
                 zIndex: 20,
             }}
         >
-          <SidebarWrapper classnames="leftSidebarOverlay" title={"Проекты"} files={allFilesForGraph} onFileSelect={onFileSelect} projects={projects} onOpenGraph={loadGlobalGraph} setSelectedId={setSelectedFileId} closeFile={closeFile}
+          <SidebarWrapper classnames="leftSidebarOverlay" title={"Проекты"} files={allFilesForGraph} onFileSelect={onFileSelect} projects={projects} onOpenGraph={loadGlobalGraph} closeFile={closeFile}
           highAction
             children={
               <List sx={{px: 2, mt: 1 }}>

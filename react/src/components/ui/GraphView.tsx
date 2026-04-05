@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ForceGraph2D, { type GraphData, type NodeObject } from 'react-force-graph-2d';
-import { useTheme } from '@mui/material/styles';
 import { Box, Checkbox, Divider, FormControlLabel, Paper, Slider, Stack, Typography } from '@mui/material';
 
 import * as d3 from 'd3-force';
@@ -212,8 +211,6 @@ useEffect(() => {
           const isTag = node.isTag;
           const fontSize = 12 / globalScale;
           ctx.font = `${fontSize}px Sans-Serif`;
-          const textWidth = ctx.measureText(label).width;
-          const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
 
           ctx.shadowColor = node.color;
           ctx.shadowBlur = isProject ? 20 : (isTag ? 10 : 5);

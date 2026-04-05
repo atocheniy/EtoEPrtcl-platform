@@ -1,12 +1,8 @@
-import React from 'react';
 import { Menu, Paper } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import type {MenuProps} from '@mui/material/Menu';
-import { Popover, styled } from '@mui/material';
-import type {PopoverProps} from '@mui/material/Popover';
-import type { Variants } from 'framer-motion';
 import { useEncryption } from '../context/EncryptionContext';
-import { ApplicationTheme, PerformanceMode } from '../../types/auth';
+import { PerformanceMode } from '../../types/auth';
 
 const menuAnimation = {
   initial: { 

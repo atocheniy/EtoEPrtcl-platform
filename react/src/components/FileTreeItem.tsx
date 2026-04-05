@@ -1,9 +1,5 @@
 import { Box, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import Collapse from '@mui/material/Collapse';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import { ApplicationTheme, listVariants } from '../types/auth';
 import FolderIcon from '@mui/icons-material/Folder';
 import { motion } from 'framer-motion';

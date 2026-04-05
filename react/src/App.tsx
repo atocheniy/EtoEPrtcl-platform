@@ -13,6 +13,7 @@ import { RequireAuth } from './components/RequireAuth';
 import { RequireUnAuth } from './components/RequireUnAuth';
 import { EncryptionProvider } from './components/context/EncryptionContext'
 import { AppThemeWrapper } from './components/context/AppThemeWrapper'
+import { NotificationProvider } from './components/NotificationContext'
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -51,13 +52,15 @@ function AnimatedRoutes() {
 function App() {
   return (
     <>
-      <EncryptionProvider>
-        <AppThemeWrapper>
-            <Router>
-                <AnimatedRoutes />
-            </Router>
-        </AppThemeWrapper>
-      </EncryptionProvider>
+      <NotificationProvider>
+        <EncryptionProvider>
+            <AppThemeWrapper>
+                <Router>
+                    <AnimatedRoutes />
+                </Router>
+            </AppThemeWrapper>
+        </EncryptionProvider>
+      </NotificationProvider>
     </>
   )
 }

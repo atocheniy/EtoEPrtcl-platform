@@ -44,9 +44,6 @@ export default function SharePage() {
     const fileNameRef = useRef<string>('');
     const [isPreviewMode, setIsPreviewMode] = useState(false);
 
-    const [manualLoading, setManualLoading] = useState(false);
-    const [isWorkingWithPreview, setIsWorkingWithPreview] = useState(false);
-
     useEffect(() => {
         const loadSharedProject = async () => {
             const base64Key = window.location.hash.substring(1);
@@ -73,7 +70,7 @@ export default function SharePage() {
         loadSharedProject();
     }, [projectId]);
 
-    const handleRestoreVersion = async (rev: any) => {
+    const handleRestoreVersion = async () => {
 
     };
 
@@ -221,7 +218,7 @@ export default function SharePage() {
                    isProjectSettinsOpen={false}
                    setIsProjectSettinsOpen={() => { } }
                    handleCloseProject={() => { window.location.href = '/'; } }
-                   isLoading={isFileLoading || isPending} onFileSelect={function (fileId: string): void {
+                   isLoading={isFileLoading || isPending} onFileSelect={function (): void {
                        throw new Error('Function not implemented.');
                    } } readOnly={true}
                 />
@@ -234,17 +231,17 @@ export default function SharePage() {
                         const nextMode = !isPreviewMode;
                 
                         if (nextMode) {
-                            setIsWorkingWithPreview(true);
-                            setManualLoading(true);
+                            true;
+                            true;
                             setTimeout(() => {
                                 startTransition(() => {
                                     setIsPreviewMode(true);
-                                    setManualLoading(false);
+                                    false;
                                 });
                             }, 50);
                         } else {
                             setIsPreviewMode(false);
-                            setIsWorkingWithPreview(false);
+                            false;
                         }
                     }}
                     onSave={async () => false} 

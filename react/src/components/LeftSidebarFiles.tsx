@@ -1,11 +1,9 @@
 import {useMemo, useRef, useState} from'react';
-import {List, ListItem, ListItemButton, ListItemIcon, ListItemText, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography, IconButton, Divider, Stack} from '@mui/material';
+import {List ,Button, DialogActions, DialogContent, DialogContentText, DialogTitle, Typography, Divider, Stack} from '@mui/material';
 
 import DescriptionIcon from '@mui/icons-material/Description';
 import ImageIcon from '@mui/icons-material/Image';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-
-import { useEffect } from 'react';
 
 import TextField from '@mui/material/TextField';
 import CreateIcon from '@mui/icons-material/Create';
@@ -13,22 +11,17 @@ import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 
 import { AnimatePresence } from 'framer-motion';
 
-import { motion } from 'framer-motion';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-import { ProjectService } from '../services/projectService';
 import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
 import { $api } from '../api/axios';
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
 import { SidebarWrapper } from './SidebarWrapper.tsx';
-import { ApplicationTheme, listVariants, PerformanceMode, type FileItem } from '../types/auth.ts';
-import GraphView from './ui/GraphView.tsx';
+import { ApplicationTheme, type FileItem } from '../types/auth.ts';
 
 import CreateNewFolderIcon from '@mui/icons-material/ArrowDownward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -237,10 +230,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     }
 };
   
-  const handleClickOpenDialog = () => { setOpenDialog(true);};
   const handleCloseDialog = () => {setOpenDialog(false);};
-
-  const handleClickOpenFolderDialog = () => { setOpenFolderDialog(true);};
   const handleCloseFolderDialog = () => {setOpenFolderDialog(false);};
 
   const getIcon = (ext: string) => {

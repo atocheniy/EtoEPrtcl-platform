@@ -1,4 +1,4 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Stack, Button, Typography, Box } from '@mui/material';
+import { DialogTitle, DialogContent, DialogActions, Stack, Button, Typography, Box } from '@mui/material';
 import { RgbaStringColorPicker } from 'react-colorful';
 import { useEncryption } from '../context/EncryptionContext';
 import { ToggleButtonGroup, ToggleButton, Divider } from '@mui/material'; 
@@ -22,7 +22,7 @@ const DEFAULT_COLOR_1 = 'rgba(99, 102, 241, 0.3)';
 const DEFAULT_COLOR_2 = 'rgba(169, 85, 247, 0.15)';
 
 export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps) => {
-    const { orbColors, setOrbColors, theme, currentTheme, setTheme, mode, setMode } = useEncryption();
+    const { orbColors, setOrbColors, theme, setTheme, mode, setMode } = useEncryption();
     const [color1, color2] = orbColors;
 
     const handleApply = async () => {

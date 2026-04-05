@@ -39,24 +39,14 @@ import {Skeleton, Stack } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { MarkdownCommand } from './ToolsPanel';
 import { memo } from 'react';
-import SettingsIcon from '@mui/icons-material/Settings';
-import Button from '@mui/material/Button';
-
-import DescriptionIcon from '@mui/icons-material/Description';
-import ShieldIcon from '@mui/icons-material/Shield';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import KeyboardIcon from '@mui/icons-material/Keyboard';
 
 import { githubLight } from '@uiw/codemirror-theme-github';
-
-import Grid from '@mui/material/Grid';
 import { useEncryption } from './context/EncryptionContext';
 import ProjectSettings from './ProjectSettings';
 import { ProjectService } from '../services/projectService';
 import { DCrypto } from '../services/cryptoService';
 import { ApplicationTheme, PerformanceMode, type Project } from '../types/auth';
 import LinkIcon from '@mui/icons-material/Link';
-import TagIcon from '@mui/icons-material/Tag';
 
 import type { Variants } from 'framer-motion';
 
@@ -146,10 +136,9 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
    const editorWrapperRef = useRef<HTMLDivElement>(null);
    const editorRef = useRef<any>(null);
    const [fontSize, setFontSize] = useState(16);
-   const { projectData, masterKey, isDarkMode, orbColors, refreshProjects, refreshProjectData, projectFiles, setProjectFiles, currentProjectId } = useEncryption();
+   const { projectData, masterKey, orbColors, refreshProjects, refreshProjectData, projectFiles } = useEncryption();
 
    const { currentProjectKey } = useEncryption();
-    const isProject = Boolean(currentProjectId);
     const { mode, currentTheme } = useEncryption();
 
     const glowAnimation = `
