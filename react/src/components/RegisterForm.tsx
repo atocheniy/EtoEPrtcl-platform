@@ -13,7 +13,7 @@ import { AuthService } from '../services/authService';
 import { useNavigate } from 'react-router';
 import { useEncryption } from './context/EncryptionContext';
 import App from '../App';
-import { ApplicationTheme } from '../types/auth';
+import { ApplicationTheme, PerformanceMode } from '../types/auth';
 
 function RegisterForm() {
     const navigate = useNavigate();
@@ -23,6 +23,8 @@ function RegisterForm() {
     const [password, setPassword] = useState('');
     const [confirmPass, setConfirmPass] = useState('');
     const [error, setError] = useState('');
+
+     const { currentTheme } = useEncryption();
 
     const { initKeysForRegister } = useEncryption();
     
@@ -54,7 +56,8 @@ function RegisterForm() {
                 encryptedExchangePrivateKey: keys.encryptedExchangePrivateKey,
                 exchangeKeyIv: keys.exchangeKeyIv,
               
-                theme: ApplicationTheme.Auto
+                theme: ApplicationTheme.Auto,
+                mode: PerformanceMode.On,
             });
 
             navigate('/editor');  
@@ -81,8 +84,7 @@ function RegisterForm() {
       sx={{
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 6,
-        bgcolor: '#222222b5',
-        backdropFilter: "blur(10px)", 
+        bgcolor: currentTheme === ApplicationTheme.Dark ? '#222222b5' : '#f5f5f5',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -93,7 +95,7 @@ function RegisterForm() {
         boxSizing: 'border-box'
       }}>
 
-      <Typography variant="h5" sx={{ color: 'white', fontWeight: 600, mb: 1 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
         Регистрация аккаунта
       </Typography>
 
@@ -110,41 +112,37 @@ function RegisterForm() {
       >
         <TextField 
             label="Почта" 
-            variant="outlined" 
+            color="secondary"
             fullWidth
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            sx={textFieldStyle}
         />
 
         <TextField 
             label="Имя пользователя" 
-            variant="outlined" 
+            color="secondary"
             fullWidth
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            sx={textFieldStyle}
         />
         
         <TextField 
             label="Пароль" 
             type="password" 
-            variant="outlined" 
+            color="secondary"
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            sx={textFieldStyle}
         />
 
         <TextField 
             label="Повторить пароль" 
             type="password" 
-            variant="outlined" 
+            color="secondary"
             fullWidth
             value={confirmPass}
             onChange={(e) => setConfirmPass(e.target.value)}
             error={password !== confirmPass && confirmPass.length > 0}
-            sx={textFieldStyle}
         />
       </Box>
 
@@ -162,15 +160,8 @@ function RegisterForm() {
             mt: 1,
             borderRadius: '12px',
             textTransform: 'none',
-            color: 'black',
             border: '1px solid rgba(112, 112, 112, 0.3)',
-            background: 'white',
             transition: '0.3s',
-            '&:hover': {
-                 border: '1px solid rgba(255, 255, 255, 1)',
-                 background: 'rgba(82, 82, 82, 0.05)',
-                 color: "white"
-            }
         }}
       >
         Зарегистрироваться

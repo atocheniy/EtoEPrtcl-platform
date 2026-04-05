@@ -6,6 +6,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 interface ChildProps {
     value: any;
+    label?: string;
     children?: React.ReactNode;
     sx?: any;
 }
@@ -46,19 +47,34 @@ export const MotionTextField = ({
         const childrenArray = React.Children.toArray(children);
         const selectedChild = childrenArray.find(
             (child): child is ReactElement<ChildProps> => 
-                React.isValidElement(child) && (child.props as ChildProps).value === value
+                React.isValidElement(child) && (child.props as ChildProps).value == value
         );
-        
-        return selectedChild ? (selectedChild.props as ChildProps).children : '';
+
+        if (!selectedChild) return '';
+        if (selectedChild.props.label) return selectedChild.props.label;
+        if (typeof selectedChild.props.children === 'string') return selectedChild.props.children;
+
+        if (Array.isArray(selectedChild.props.children)) {
+            const textNode = selectedChild.props.children.find(c => typeof c === 'string');
+            if (textNode) return textNode;
+            
+            const typographyNode: any = selectedChild.props.children.find(
+                (c: any) => React.isValidElement(c) && (c.props as any).children
+            );
+            if (typographyNode) return typographyNode.props.children;
+        }
+
+        return '';
     };
 
     return (
         <>
             <TextField
                 {...props}
+                select={false}
                 ref={containerRef}
                 label={label}
-                value={getDisplayValue()}
+                value={getDisplayValue()} 
                 onClick={handleOpen}
                 autoComplete="off"
                 InputProps={{

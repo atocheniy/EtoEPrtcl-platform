@@ -1,10 +1,10 @@
-import { Paper, Divider, Typography, Box, type SxProps, Dialog, IconButton, Button, Menu, MenuItem } from '@mui/material';
+import { Paper, Divider, Typography, Box, type SxProps, Dialog, IconButton, Button, Menu, MenuItem, type PaperProps } from '@mui/material';
 import { UserSection } from './UserSection';
 
 import CloseIcon from '@mui/icons-material/Close';
 import GraphView from './ui/GraphView';
 import { useState } from 'react';
-import type { FileItem } from '../types/auth';
+import { ApplicationTheme, PerformanceMode, type FileItem } from '../types/auth';
 import { whiteSolidButton } from './css/sx';
 
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -33,9 +33,10 @@ interface SidebarWrapperProps {
     setIsProjectSettinsOpen?: React.Dispatch<React.SetStateAction<boolean>>;
     isProjectSettinsOpen?: boolean;
     closeFile: () => void;
+    variant?: PaperProps['variant']; 
 }
 
-export const SidebarWrapper = ({ classnames, title, highAction, children, topAction, bottomAction, secondBottomAction, customsx, files, projects = [], projectIdSelected, setSelectedId, onFileSelect, onOpenGraph, setIsProjectSettinsOpen, isProjectSettinsOpen, closeFile}: SidebarWrapperProps) => {
+export const SidebarWrapper = ({ classnames, title, highAction, children, topAction, bottomAction, secondBottomAction, customsx, variant, files, projects = [], projectIdSelected, setSelectedId, onFileSelect, onOpenGraph, setIsProjectSettinsOpen, isProjectSettinsOpen, closeFile}: SidebarWrapperProps) => {
     const [showGraph, setShowGraph] = useState(false);
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -43,6 +44,7 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
     const MotionTypography = motion(Typography);
 
     const { orbColors } = useEncryption();
+    const { mode, currentTheme } = useEncryption();
 
     const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -79,15 +81,15 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
        <Dialog fullScreen open={showGraph} onClose={() => setShowGraph(false)}
          slotProps={{
                 backdrop: {
-                    sx: {backgroundColor: 'rgba(0, 0, 0, 0)' }
+                    sx: {backgroundColor:  'rgba(0, 0, 0, 0)' }
                 }
             }}
             PaperProps={{ 
                 sx: { 
-                    bgcolor: 'rgba(12, 12, 12, 0.7) !important', 
-                    background: 'rgba(27, 27, 27, 0.7) !important',
-                    backdropFilter: 'blur(12px) !important', 
-                    color: 'white !important',
+                    bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(12, 12, 12, 0.7) !important' : 'rgba(230, 230, 230, 0.7) !important',
+                    background: currentTheme === ApplicationTheme.Dark ? 'rgba(27, 27, 27, 0.7) !important' : 'rgba(230, 230, 230, 0.7) !important',
+                    backdropFilter: mode === PerformanceMode.Off ? 'blur(12px) !important' : undefined,
+                    color: currentTheme === ApplicationTheme.Dark ? 'white !important' : 'black !important',
                 } 
             }}>
                 <IconButton onClick={() => setShowGraph(false)} sx={{ position: 'absolute', top: 20, right: 20, zIndex: 999 }}>
@@ -104,6 +106,7 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
                 />
              </Dialog>
         <Paper
+        variant={variant}
         elevation={1}
         className={classnames}
         sx={[{
@@ -129,7 +132,6 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
                     alignItems: 'center', 
                     justifyContent: 'center',
                     gap: 0.5,
-                    color: 'white',
                     transition: 'opacity 0.2s',
                     '&:hover': { opacity: 0.8 }
                 }}

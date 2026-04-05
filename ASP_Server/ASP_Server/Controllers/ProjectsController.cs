@@ -122,6 +122,8 @@ public class ProjectsController : ControllerBase
         project.Priority = model.Priority;
         project.Status = model.Status;
         project.UpdatedAt = DateTime.UtcNow;
+        project.PublicEncryptedKey = model.PublicEncryptedKey;
+        project.PublicKeyIv = model.PublicKeyIv;
 
         try
         {
@@ -159,33 +161,49 @@ public class ProjectsController : ControllerBase
     }
     
     [HttpGet("{id}")]
-    [Authorize]
-    [SignatureRequired]
+    [AllowAnonymous]
     public async Task<ActionResult<Project>> GetProject(Guid id)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var memberInfo = await _context.ProjectMembers
-            .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId);
-        
-        if (memberInfo == null) return Forbid();
-
         var project = await _context.Projects.FindAsync(id);
-
-        if (project == null)
+        if (project == null) return NotFound();
+        
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId != null) 
         {
-            return NotFound(); 
+            var memberInfo = await _context.ProjectMembers
+                .FirstOrDefaultAsync(pm => pm.ProjectId == id && pm.UserId == userId);
+
+            if (memberInfo != null)
+            {
+                return Ok(new {
+                    id = project.Id,
+                    name = project.Name,
+                    iv = project.Iv,
+                    isPublic = project.IsPublic,
+                    priority = project.Priority, 
+                    status = project.Status,
+                    encryptedProjectKey = memberInfo.EncryptedProjectKey,
+                    keyIv = memberInfo.Iv,
+                    role = memberInfo.Role
+                });
+            }
+        }
+        
+        if (!project.IsPublic)
+        {
+            return Unauthorized();
         }
 
         return Ok(new {
             id = project.Id,
             name = project.Name,
             iv = project.Iv,
-            isPublic = project.IsPublic,
+            isPublic = true,
             priority = project.Priority,
             status = project.Status,
-            encryptedProjectKey = memberInfo.EncryptedProjectKey,
-            keyIv = memberInfo.Iv,
-            role = memberInfo.Role
+            encryptedProjectKey = project.PublicEncryptedKey, 
+            keyIv = project.PublicKeyIv, 
+            role = "Viewer"
         });
     }
     

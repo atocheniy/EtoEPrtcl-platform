@@ -19,7 +19,7 @@ import AnimatedPage from '../components/AnimatedPage';
 import { useEncryption } from '../components/context/EncryptionContext';
 import { textFieldStyle, whiteSolidButton } from '../components/css/sx';
 import { UserService } from '../services/userService';
-import type { UpdateName } from '../types/auth';
+import { ApplicationTheme, type UpdateName } from '../types/auth';
 
 type EditMode = 'name' | 'email' | 'password' | null;
 
@@ -34,7 +34,7 @@ function UserPage() {
   const [inputValue, setInputValue] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const { orbColors } = useEncryption();
+  const { orbColors, currentTheme } = useEncryption();
 
   const { refreshUserData } = useEncryption();
 
@@ -71,6 +71,18 @@ function UserPage() {
     }
   };
 
+  const DeleteUser = async () => {
+    if(window.confirm("Вы уверены, что хотите удалить аккаунт? Это действие необратимо.")){
+      try {
+        await UserService.deleteAccount();
+        navigate('/login');
+      } catch (e) {
+        console.error(e);
+        alert("Произошла ошибка при удалении аккаунта. Попробуйте позже.");
+      }
+    }
+  }
+
   const sectionStyle = {
     p: 3,
     borderRadius: 4,
@@ -82,18 +94,18 @@ function UserPage() {
   return (
     <AnimatedPage>
       <Box className='mainContainer' sx={{ overflowY: 'auto', py: 5 }}>
-        <Container maxWidth="sm" sx={{background: "rgb(27, 27, 27)", padding: "20px", borderRadius: "20px"}}>
+        <Paper elevation={1} variant='solid' sx={{width: "600px", background: currentTheme === ApplicationTheme.Dark ? '' : '#f5f5f5', padding: "20px", borderRadius: "20px"}}>
           
           <Button 
             startIcon={<ArrowBackIcon />} 
             onClick={() => navigate('/editor')}
-            sx={{ color: 'rgba(255,255,255,0.5)', mb: 4, textTransform: 'none' }}
+            sx={{  mb: 4, textTransform: 'none' }}
           >
             Вернуться в редактор
           </Button>
 
           <Stack alignItems="center" spacing={2} sx={{ mb: 6 }}>
-            <Avatar sx={{ width: 100, height: 100, bgcolor: '#ffffff', fontSize: '2rem' }}>
+            <Avatar sx={{ width: 100, height: 100, fontSize: '2rem' }}>
               {userData.fullName.toUpperCase().substring(0, 2)}
             </Avatar>
             <Box textAlign="center">
@@ -102,14 +114,14 @@ function UserPage() {
             </Box>
           </Stack>
 
-          <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.3)', ml: 1 }}>Личные данные</Typography>
+          <Typography variant="overline" sx={{ ml: 1 }}>Личные данные</Typography>
           <Paper elevation={0} sx={sectionStyle}>
             <Stack spacing={3}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <PersonIcon sx={{ color: 'rgba(255,255,255,0.2)' }} />
+                  <PersonIcon sx={{  }} />
                   <Box>
-                    <Typography variant="caption" color="rgba(255,255,255,0.4)">Имя</Typography>
+                    <Typography variant="caption" color='secondary'>Имя</Typography>
                     <Typography variant="body1">{userData.fullName}</Typography>
                   </Box>
                 </Stack>
@@ -120,9 +132,9 @@ function UserPage() {
 
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <EmailIcon sx={{ color: 'rgba(255,255,255,0.2)' }} />
+                  <EmailIcon sx={{ }} />
                   <Box>
-                    <Typography variant="caption" color="rgba(255,255,255,0.4)">Почта</Typography>
+                    <Typography variant="caption" color='secondary'>Почта</Typography>
                     <Typography variant="body1">{userData.email}</Typography>
                   </Box>
                 </Stack>
@@ -131,37 +143,18 @@ function UserPage() {
             </Stack>
           </Paper>
 
-          <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.3)', ml: 1 }}>Безопасность</Typography>
+          <Typography variant="overline" sx={{ ml: 1 }}>Безопасность</Typography>
           <Paper elevation={0} sx={sectionStyle}>
             <Stack spacing={3}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <ShieldIcon sx={{ color: 'rgba(255,255,255,0.2)' }} />
+                  <ShieldIcon sx={{ }} />
                   <Box>
                     <Typography variant="body1">Пароль</Typography>
-                    <Typography variant="caption" color="rgba(255,255,255,0.4)"></Typography>
+                    <Typography variant="caption"></Typography>
                   </Box>
                 </Stack>
                 <Button onClick={() => handleOpenEdit('password')} size="small" sx={{ color: orbColors[0].replace(/[\d.]+\)$/g, '1)'), textTransform: 'none' }}>Сменить</Button>
-              </Stack>
-
-              <Divider sx={{ bgcolor: 'rgba(255,255,255,0.05)' }} />
-
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Box>
-                  <Typography variant="body1">Двухфакторная аутентификация</Typography>
-                  <Typography variant="caption" color="rgba(255,255,255,0.4)">
-                    Дополнительный код подтверждения на почту
-                  </Typography>
-                </Box>
-                <Switch 
-                  checked={twoFactor} 
-                  onChange={(e) => setTwoFactor(e.target.checked)}
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': { color: orbColors[0].replace(/[\d.]+\)$/g, '1)') },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: '#3a3a3a' }
-                  }}
-                />
               </Stack>
             </Stack>
           </Paper>
@@ -169,19 +162,12 @@ function UserPage() {
           <Dialog 
             open={Boolean(editMode)} 
             onClose={handleClose}
+            color='secondary'
             PaperProps={{
-              sx: {
-                bgcolor: 'rgb(35, 35, 35)',
-                backgroundImage: 'none',
-                borderRadius: '20px',
-                width: '100%',
-                maxWidth: '400px',
-                p: 2,
-                border: '1px solid rgba(255,255,255,0.1)'
-              }
+              variant: 'DialogBlur',
             }}
           >
-            <DialogTitle sx={{ color: 'white', fontWeight: 700 }}>
+            <DialogTitle sx={{ fontWeight: 700 }}>
               {editMode === 'name' && 'Изменить имя'}
               {editMode === 'email' && 'Изменить почту'}
               {editMode === 'password' && 'Смена пароля'}
@@ -215,7 +201,7 @@ function UserPage() {
               </Stack>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
-              <Button onClick={handleClose} sx={{ color: 'rgba(255,255,255,0.5)', textTransform: 'none' }}>
+              <Button onClick={handleClose} sx={{  textTransform: 'none' }}>
                 Отмена
               </Button>
               <Button 
@@ -230,15 +216,15 @@ function UserPage() {
           </Dialog>
 
           <Box sx={{ mt: 6, textAlign: 'center' }}>
-            <Button color="error" sx={{ textTransform: 'none', opacity: 0.6, '&:hover': { opacity: 1 } }}>
+            <Button color="error" onClick={DeleteUser} sx={{ textTransform: 'none', opacity: 0.6, '&:hover': { opacity: 1 } }}>
               Удалить аккаунт
             </Button>
           </Box>
 
-        </Container>
+        </Paper>
       </Box>
     </AnimatedPage>
   );
 }
 
-export default UserPage
+export default UserPage;

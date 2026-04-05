@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { 
     Dialog, DialogTitle, DialogContent, Box, Typography, 
     TextField, Button, Stack, Divider, List, ListItem, 
-    Avatar, IconButton, Select, MenuItem, Chip
+    Avatar, IconButton, Select, MenuItem, Chip,
+    Tooltip
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -94,9 +95,26 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
 
     const amIOwner = members.find(m => m.isMe)?.role === 'Owner';
 
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText(`https://localhost:5173/share/${projectData?.id || 'demo'}#KEY123`);
-        alert("Ссылка скопирована!");
+    const [exportedKey, setExportedKey] = useState<string>("");
+    useEffect(() => {
+        const getRawKey = async () => {
+            if (currentProjectKey && projectData?.isPublic) {
+                const raw = await DCrypto.exportProjectKey(currentProjectKey);
+                setExportedKey(raw);
+            }
+        };
+        getRawKey();
+    }, [currentProjectKey, projectData?.isPublic]);
+
+    const isPublic = projectData?.isPublic;
+    const shareUrl = isPublic 
+        ? `${window.location.origin}/share/${projectData.id}#${exportedKey}`
+        : "Доступ ограничен";
+
+    const handleCopyLink = () => {  
+    if (!isPublic) return;
+        navigator.clipboard.writeText(shareUrl);
+        alert("Публичная ссылка скопирована");
     };
 
     return (
@@ -115,31 +133,53 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                 {amIOwner && (
                 <>
                 <Box sx={{ mb: 4, mt: 1 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
                         ДОСТУП ПО ССЫЛКЕ
                     </Typography>
                     <Stack direction="row" spacing={1}>
-                        <TextField 
-                            fullWidth 
-                            size="small"
-                            value="Ограничен (Только по приглашению)"
-                            disabled
-                            sx={inputStyle}
-                        />
-                        <Button 
-                            variant="outlined" 
-                            sx={{ ...whiteOutlinedButton, minWidth: '40px', p: 0 }}
-                            onClick={handleCopyLink}
-                        >
-                            <ContentCopyIcon fontSize="small" />
-                        </Button>
-                    </Stack>
+        <TextField 
+            fullWidth 
+            size="small"
+            value={shareUrl}
+            color='secondary'
+            sx={{
+                '& .MuiInputBase-input': { 
+                    color: isPublic ? '#4ade80' : 'rgba(255,255,255,0.3)',
+                    fontSize: '0.8rem',
+                    textOverflow: 'ellipsis'
+                }
+            }}
+        />
+        <Tooltip title={isPublic ? "Копировать ссылку" : "Сначала сделайте проект публичным в настройках"}>
+            <span> 
+                <Button 
+                    variant="outlined" 
+                    disabled={!isPublic}
+                    sx={{ 
+                        ...whiteOutlinedButton, 
+                        minWidth: '40px', 
+                        p: 0,
+                        borderColor: isPublic ? '#4ade80' : 'rgba(255,255,255,0.1)',
+                        color: isPublic ? '#4ade80' : 'disabled'
+                    }}
+                    onClick={handleCopyLink}
+                >
+                    <ContentCopyIcon fontSize="small" />
+                </Button>
+            </span>
+        </Tooltip>
+    </Stack>
+    {!isPublic && (
+        <Typography variant="caption" sx={{ color: '#818cf8', mt: 1, display: 'block' }}>
+            * Чтобы активировать ссылку, включите «Публичный проект» в настройках.
+        </Typography>
+    )}
                 </Box>
 
                 <Divider sx={{ borderColor: 'rgba(255,255,255,0.05)', mb: 3 }} />
 
                 <Box sx={{ mb: 4 }}>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
                         ПРИГЛАСИТЬ ПОЛЬЗОВАТЕЛЕЙ
                     </Typography>
                     <Stack direction="row" spacing={1}>
@@ -149,7 +189,7 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                             placeholder="Email адрес..."
                             value={inviteEmail}
                             onChange={(e) => setInviteEmail(e.target.value)}
-                            sx={inputStyle}
+                            color='secondary'
                         />
                         <Select
                             size="small"
@@ -173,7 +213,7 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                 )}
 
                 <Box>
-                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 1, display: 'block', fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
                         УЧАСТНИКИ ПРОЕКТА ({members.length})
                     </Typography>
                     <List disablePadding>
@@ -199,7 +239,7 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                                 </Box>
                                 
                                 {member.role === 'Owner' ? (
-                                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', pr: 2 }}>Владелец</Typography>
+                                    <Typography variant="caption" sx={{ pr: 2 }}>Владелец</Typography>
                                 ) : (
                                     <Stack direction="row" alignItems="center">
                                         <Select
@@ -209,7 +249,7 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                                             disableUnderline
                                             disabled={!amIOwner}
                                             onChange={(e) => handleUpdateRole(member.userId, e.target.value)}
-                                            sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', mr: 1 }}
+                                            sx={{ fontSize: '0.8rem', mr: 1 }}
                                         >
                                             <MenuItem value="Viewer">Чтение</MenuItem>
                                             <MenuItem value="Editor">Редактор</MenuItem>

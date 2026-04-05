@@ -22,7 +22,7 @@ import { $api } from '../api/axios';
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
 import { SidebarWrapper } from './SidebarWrapper.tsx';
-import { listVariants, type FileItem } from '../types/auth.ts';
+import { ApplicationTheme, listVariants, PerformanceMode, type FileItem } from '../types/auth.ts';
 import GraphView from './ui/GraphView.tsx';
 
 import CreateNewFolderIcon from '@mui/icons-material/ArrowDownward';
@@ -38,6 +38,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import { FileTreeItem } from './FileTreeItem.tsx';
 import { MotionMenu } from './ui/MotionMenu.tsx';
 import { MotionDialog } from './ui/MotionDialog.tsx';
+import { MotionTextField } from './ui/MotionTextField.tsx';
 
 const buildFileTree = (items: FileItem[]) => {
     const map = new Map<string, any>();
@@ -96,6 +97,7 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect, projectIdSelected, 
   const [openRenameDialog, setOpenRenameDialog] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const { orbColors } = useEncryption();
+  const { currentTheme } = useEncryption();
   const { currentProjectKey, clearCurrentProjectId } = useEncryption();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -393,10 +395,8 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     <SidebarWrapper
      projectIdSelected={projectIdSelected}
      isProjectSettinsOpen={isProjectSettinsOpen} setIsProjectSettinsOpen={setIsProjectSettinsOpen} closeFile={closeFile}
-      customsx={{
-        bgcolor: 'rgb(10, 10, 10)',
-      }}
       title={projectId === projectData.id ? projectData.name : "Загрузка..."}
+      variant='solid'
       highAction={
               <Button 
           variant="contained"      
@@ -418,7 +418,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
       </Button>
       }
      topAction={
-        <TextField onChange={changeSearchField} value={searchField} sx={{ '& .MuiInputBase-input': { color: 'white' }, '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' }, '& .MuiInputLabel-root.Mui-focused': { color: '#fff' }, '& .MuiOutlinedInput-root': { borderRadius: '15px', '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' }, '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' }, '&.Mui-focused fieldset': { borderColor: 'white' }, },}} id="outlined-basic" label="Поиск..." variant="outlined" />
+        <TextField onChange={changeSearchField} value={searchField} id="outlined-basic" label="Поиск..." variant="outlined" />
      }
      children={
         <List sx={{ px: 2, mt: 1 }}>
@@ -542,7 +542,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     {isCreatingFolder ? "Новая Папка" : "Новый Файл"}
   </DialogTitle>
         <DialogContent>
-             <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+             <DialogContentText sx={{ mb: 2 }}>
     Введите название для {isCreatingFolder ? "папки" : "файла"}. Вы сможете изменить настройки позже.
     </DialogContentText>
           <form onSubmit={handleSubmit} id="subscription-form">
@@ -555,48 +555,32 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         label="Название файла"
         type="text"
         fullWidth
-        variant="outlined" 
-        sx={{'& .MuiInputBase-input': { color: 'white' },'& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' },'& .MuiInputLabel-root.Mui-focused': { color: '#fff' },'& .MuiOutlinedInput-root': {borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
-      />
-      <TextField
-          select
+       color='secondary'  />
+       
+       <MotionTextField
           fullWidth
           label="Разместить в..."
           value={createParentId || ""}
-          onChange={(e) => setCreateParentId(e.target.value || null)}
-          sx={{'& .MuiInputBase-input': { color: 'white' },'& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' },'& .MuiInputLabel-root.Mui-focused': { color: '#fff' },'& .MuiOutlinedInput-root': {borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
-          SelectProps={{
-            MenuProps: {
-              PaperProps: {
-                slotProps: {
-                  paper: {
-                    sx: {
-                      bgcolor: 'rgba(15, 15, 15, 0.9)',
-                      backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      borderRadius: '12px',
-                      color: 'white',
-                      minWidth: '160px',
-                      mt: 0.5
-                    }
-                  }
-                }}
-              }
-            }
+          onChange={(val) => setCreateParentId(val || null)}
+          color='secondary'
+          sx={{'& .MuiOutlinedInput-root': {
+            borderRadius: '15px',
+            
           }
-        >
-          <MenuItem value="" sx={{ gap: 1.5 }}>
+          }}
+       >
+          <MenuItem {...({ value: "", label: "Корень проекта" } as any)}  sx={{ gap: 1.5, py: 1, mb: 0.5, mx: 0.5, borderRadius: '10px',  }}>
             <InsertDriveFileIcon fontSize="small" sx={{ opacity: 0.5 }} />
             <Typography variant="body2">Корень проекта (общее пространство)</Typography>
           </MenuItem>
           
           {availableFolders.map((folder) => (
-            <MenuItem key={folder.id} value={folder.id} sx={{ gap: 1.5 }}>
+            <MenuItem key={folder.id} {...({ value: folder.id, label: folder.name } as any)} sx={{ gap: 1.5, py: 1, mb: 0.5, mx: 0.5, borderRadius: '10px',  }}>
               <FolderIcon fontSize="small" sx={{ opacity: 0.7, color: orbColors[1] }} />
               <Typography variant="body2">{folder.name}</Typography>
             </MenuItem>
           ))}
-        </TextField>
+        </MotionTextField>
       </Stack>
           </form>
         </DialogContent>
@@ -637,7 +621,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     <FolderIcon sx={{mb: 0.1}}/> Новая Папка
   </DialogTitle>
         <DialogContent>
-             <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+             <DialogContentText sx={{ mb: 2 }}>
       Введите название для новой папки. Вы сможете изменить настройки позже.
     </DialogContentText>
           <form onSubmit={handleFolderSubmit} id="subscription-form">
@@ -650,7 +634,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         type="text"
         fullWidth
         variant="outlined" 
-        sx={{'& .MuiInputBase-input': { color: 'white' },'& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' },'& .MuiInputLabel-root.Mui-focused': { color: '#fff' },'& .MuiOutlinedInput-root': {borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
+        sx={{'& .MuiInputLabel-root': { color: currentTheme === ApplicationTheme.Dark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' },'& .MuiOutlinedInput-root': {borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
       />
           </form>
         </DialogContent>
@@ -740,8 +724,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                     variant="outlined"
                     value={newFileName}
                     onChange={(e) => setNewFileName(e.target.value)}
-                    sx={{'& .MuiInputBase-input': { color: 'white' },'& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' },'& .MuiInputLabel-root.Mui-focused': { color: '#fff' },'& .MuiOutlinedInput-root': {borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
-                />
+                    color='secondary'    />
             </form>
         </DialogContent>
         <DialogActions sx={{ p: 2, pt: 0 }}>

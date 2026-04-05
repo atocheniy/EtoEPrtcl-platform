@@ -20,6 +20,8 @@ import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useEncryption } from './context/EncryptionContext';
+import { ApplicationTheme, PerformanceMode } from '../types/auth';
 
 interface TopPanelProps {
     selected: boolean;
@@ -71,6 +73,7 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
     <>
     <Paper
       elevation={1}
+      variant='blur'
       sx={{
         position: 'absolute', 
         top: 0,
@@ -84,16 +87,14 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 6, 
   
-        bgcolor: 'rgba(10, 10, 10, 0.7)',
-        backdropFilter: "blur(5px) saturate(150%)",
-        
+      
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         height: '50px',
         boxSizing: 'border-box',
         boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
-        
+        transition: 'background-color 0.3s, border-color 0.3s',
       }}
     >
       <Box sx={{ position: 'absolute', left: 16, display: 'flex', alignItems: 'center' }}>

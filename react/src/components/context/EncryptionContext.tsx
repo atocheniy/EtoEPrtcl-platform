@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { DCrypto } from '../../services/cryptoService';
-import { ApplicationTheme, type FileItem, type Project, type User } from '../../types/auth';
+import { ApplicationTheme, PerformanceMode, type FileItem, type Project, type User } from '../../types/auth';
 import { UserService } from '../../services/userService';
 import { ProjectService } from '../../services/projectService';
 import $api from '../../api/axios';
@@ -22,11 +22,13 @@ interface EncryptionContextType {
     signingKey: CryptoKey | null;
     exchangeKey: CryptoKey | null;
     currentProjectKey: CryptoKey | null;
+    setCurrentProjectKey: React.Dispatch<React.SetStateAction<CryptoKey | null>>;
 
     userData: User | { fullName: 'Загрузка...', email: '', salt: '' };
     refreshUserData: () => Promise<void>;
 
-    projectData: Project; 
+    projectData: Project;
+    setProjectData: React.Dispatch<React.SetStateAction<Project>>; 
     projects: Project[];
     refreshProjects: () => Promise<void>;
     refreshProjectData: () => Promise<void>;
@@ -44,8 +46,16 @@ interface EncryptionContextType {
 
     orbColors: [string, string];
     setOrbColors: React.Dispatch<React.SetStateAction<[string, string]>>;
+
     theme: ApplicationTheme;
     setTheme: React.Dispatch<React.SetStateAction<ApplicationTheme>>;
+
+    currentTheme: ApplicationTheme;
+    setCurrentTheme: React.Dispatch<React.SetStateAction<ApplicationTheme>>;
+
+    mode: PerformanceMode;
+    setMode: React.Dispatch<React.SetStateAction<PerformanceMode>>;
+
     isDarkMode: boolean;
 
     refreshCurrentProjectId: (id: string) => void;
@@ -62,7 +72,7 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     const [exchangeKey, setExchangeKey] = useState<CryptoKey | null>(null);
     const [currentProjectKey, setCurrentProjectKey] = useState<CryptoKey | null>(null);
     
-    const [userData, setUserData] = useState<User>({ fullName: 'Загрузка...', email: '', salt: '', orbColor1: 'rgba(0, 0, 0, 0)', orbColor2: 'rgba(0, 0, 0, 0)', theme: ApplicationTheme.Auto });
+    const [userData, setUserData] = useState<User>({ fullName: 'Загрузка...', email: '', salt: '', orbColor1: 'rgba(112, 112, 112, 0)', orbColor2: 'rgba(112, 112, 112, 0)', theme: ApplicationTheme.Auto, mode: PerformanceMode.On });
     const [projectData, setProjectData] = useState<Project>({ id: "123", name: 'Загрузка...', iv: "123", isPublic: false, priority: "Low", status: "Active", encryptedProjectKey: "", keyIv: "", role: 'Viewer'});
     
     const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
@@ -71,11 +81,13 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     const [projectFiles, setProjectFiles] = useState<FileItem[]>([]);
 
     const [orbColors, setOrbColors] = useState<[string, string]>([
-        'rgba(99, 102, 241, 0.3)',
-        'rgba(169, 85, 247, 0.15)' 
+        'rgba(112, 112, 112, 0)',
+        'rgba(112, 112, 112, 0)' 
     ]);
 
     const [theme, setTheme] = useState<ApplicationTheme>(ApplicationTheme.Auto);
+    const [currentTheme, setCurrentTheme] = useState<ApplicationTheme>(ApplicationTheme.Auto);
+    const [mode, setMode] = useState<PerformanceMode>(PerformanceMode.On);
 
     const systemPrefersDark = useMediaQuery('(prefers-color-scheme: dark)');
     const isDarkMode = useMemo(() => {
@@ -87,6 +99,12 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
         return theme === 'Dark'; 
     }, [theme, systemPrefersDark]);
 
+    useEffect(() => {
+        const activeTheme = isDarkMode ? ApplicationTheme.Dark : ApplicationTheme.Light;
+        setCurrentTheme(activeTheme);
+        console.log("Theme synchronized to:", activeTheme);
+    }, [isDarkMode]);
+
     const refreshUserData = async () => {
         try {
             const data = await UserService.getUser();
@@ -94,9 +112,10 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
 
             if (data.orbColor1 && data.orbColor2) setOrbColors([data.orbColor1, data.orbColor2]);
             if (data.theme) setTheme(data.theme);
+            if (data.mode) setMode(data.mode);
         } catch (error) {
             console.error("Ошибка обновления данных пользователя", error);
-            setUserData({ fullName: 'Гость', email: 'Ошибка загрузки', salt: '', orbColor1: 'rgba(0, 0, 0, 0)', orbColor2: 'rgba(0, 0, 0, 0)', theme: ApplicationTheme.Auto });
+            setUserData({ fullName: 'Гость', email: 'Ошибка загрузки', salt: '', orbColor1: 'rgba(140, 0, 0, 0.52)', orbColor2: 'rgba(140, 0, 0, 0.52)', theme: ApplicationTheme.Auto, mode: PerformanceMode.On });
         }
     };
     
@@ -139,7 +158,7 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     };
 
     const refreshProjectFiles = async (projectId: string, pKey: CryptoKey) => {
-        if (!masterKey) return;
+        if (!pKey) return; 
         try {
             const response = await $api.get<any[]>(`/files/project/${projectId}`);
             const decryptedFiles = await Promise.all(response.data.map(async f => {
@@ -195,27 +214,32 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     useEffect(() => {
         const token = localStorage.getItem('token');
 
-        if(currentProjectId && masterKey && token){
+        if(currentProjectId){
             ProjectService.getProjectById(currentProjectId).then( async data => {    
                 try {
                 let rawProjectKeyBase64: string;
 
-                if (data.keyIv === "RSA") {
-                    console.log("Доступ к проекту через RSA (Гость)");
-                    const myExchangePrivateKey = await DCrypto.loadKeyFromStorage("exchange_private_key");
-                    if (!myExchangePrivateKey) throw new Error("RSA ключ не найден");
+                if (masterKey && data.role !== "Viewer" && data.keyIv !== "PUBLIC") { 
 
-                    rawProjectKeyBase64 = await DCrypto.unwrapProjectKeyWithRSA(
-                        data.encryptedProjectKey, 
-                        myExchangePrivateKey
-                    );
-                } else {
-                    console.log("Доступ к проекту через MasterKey");
-                    rawProjectKeyBase64 = await DCrypto.decrypt(
-                        data.encryptedProjectKey, 
-                        data.keyIv, 
-                        masterKey 
-                    );
+                    if (data.keyIv === "RSA") {
+                        const myExchangePrivateKey = await DCrypto.loadKeyFromStorage("exchange_private_key");
+                        if (!myExchangePrivateKey) throw new Error("RSA ключ не найден");
+                        rawProjectKeyBase64 = await DCrypto.unwrapProjectKeyWithRSA(
+                            data.encryptedProjectKey, 
+                            myExchangePrivateKey
+                        );
+                    } else {
+                        rawProjectKeyBase64 = await DCrypto.decrypt(data.encryptedProjectKey, data.keyIv, masterKey);
+                    }
+                } 
+                else if (data.isPublic) {
+                    setUserData({ fullName: "Гость", email: 'Без регистрации', salt: '', orbColor1: 'rgba(100, 100, 100, 0)', orbColor2: 'rgba(100, 100, 100, 0)', theme: ApplicationTheme.Auto, mode: PerformanceMode.On });
+                    setOrbColors(['rgba(100, 100, 100, 0)', 'rgba(100, 100, 100, 0)']);
+                    const publicMasterKey = await DCrypto.deriveMasterKey("PUBLIC_ACCESS", data.id);
+                    rawProjectKeyBase64 = await DCrypto.decrypt(data.encryptedProjectKey, data.keyIv, publicMasterKey);
+                } 
+                else {
+                    throw new Error("Нет прав доступа или ключей");
                 }
 
                 const pKey = await DCrypto.importProjectKey(rawProjectKeyBase64);
@@ -242,15 +266,19 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
             }
         });
 
-        } else { setProjectFiles([]); if (!currentProjectId) setCurrentProjectKey(null); }
+        } 
+        else { setProjectFiles([]); if (!currentProjectId) setCurrentProjectKey(null); }
    }, [currentProjectId, masterKey])
 
     useEffect(() => {
         const token = localStorage.getItem('token');
 
-        if (masterKey && signingKey && token) { 
-            refreshProjects();
+        if (token) {
             refreshUserData();
+        }
+
+        if (masterKey && signingKey) { 
+            refreshProjects();
         }
     }, [masterKey, signingKey]);
     
@@ -323,7 +351,8 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
             salt: '', 
             orbColor1: 'rgba(0, 0, 0, 0)', 
             orbColor2: 'rgba(0, 0, 0, 0)' ,
-            theme: ApplicationTheme.Auto
+            theme: ApplicationTheme.Auto,
+            mode: PerformanceMode.On,
         });
 
         setProjects([]);
@@ -334,7 +363,7 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     };
 
     return (
-        <EncryptionContext.Provider value={{ masterKey, signingKey, exchangeKey, currentProjectKey, userData, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
+        <EncryptionContext.Provider value={{ masterKey, signingKey, exchangeKey, currentProjectKey, userData, setCurrentProjectKey, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, currentTheme, setCurrentTheme, mode, setMode, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, setProjectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
             {children}
         </EncryptionContext.Provider>
     );

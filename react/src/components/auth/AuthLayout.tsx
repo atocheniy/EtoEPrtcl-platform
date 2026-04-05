@@ -1,5 +1,7 @@
 import { Paper, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router';
+import { useEncryption } from '../context/EncryptionContext';
+import { ApplicationTheme } from '../../types/auth';
 
 interface AuthLayoutProps {
     text: string;
@@ -10,7 +12,7 @@ interface AuthLayoutProps {
 
 const AuthLayout = ({ text, buttonLabel, navigateTo }: AuthLayoutProps) => {
     const navigate = useNavigate();
-
+    const { theme, currentTheme } = useEncryption();
     return (
         <Paper
             elevation={0}
@@ -21,8 +23,7 @@ const AuthLayout = ({ text, buttonLabel, navigateTo }: AuthLayoutProps) => {
                 m: 3,
                 border: '1px solid rgba(255, 255, 255, 0.08)',
                 borderRadius: 6,
-                bgcolor: '#222222b5',
-                backdropFilter: "blur(10px)", 
+                bgcolor: currentTheme === ApplicationTheme.Dark ? '#222222b5' : '#f5f5f5',
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -34,7 +35,7 @@ const AuthLayout = ({ text, buttonLabel, navigateTo }: AuthLayoutProps) => {
                 boxSizing: 'border-box'
             }}
         >
-            <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>{text}</Typography>
+            <Typography sx={{ }}>{text}</Typography>
             <Button
                 fullWidth
                 variant='contained'
@@ -43,15 +44,8 @@ const AuthLayout = ({ text, buttonLabel, navigateTo }: AuthLayoutProps) => {
                     width: "170px",
                     borderRadius: '12px',
                     textTransform: 'none',
-                    color: 'black',
                     border: '1px solid rgba(112, 112, 112, 0.3)',
-                    background: 'white',
                     transition: '0.3s',
-                    '&:hover': {
-                        border: '1px solid rgba(255, 255, 255, 1)',
-                        background: 'rgba(82, 82, 82, 0.05)',
-                        color: "white"
-                    }
                 }}
             >
                 {buttonLabel}

@@ -3,6 +3,8 @@ import { Popover, Paper, styled } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import type {PopoverProps} from '@mui/material/Popover';
 import type { Variants } from 'framer-motion';
+import { useEncryption } from '../context/EncryptionContext';
+import { ApplicationTheme, PerformanceMode } from '../../types/auth';
 
 const defaultVariants: Variants = {
   initial: { opacity: 0, scale: 0.9, y: 10, filter: 'blur(10px)' },
@@ -57,6 +59,8 @@ export const MotionPopover = ({
   sx,
   ...props 
 }: MotionPopoverProps) => {
+    const { mode } = useEncryption();
+    const effectsEnabled = mode === PerformanceMode.Off;
   return (
     <AnimatePresence>
       {open && (
@@ -65,22 +69,19 @@ export const MotionPopover = ({
           open={true}
           anchorEl={anchorEl}
           onClose={onClose}
-          transitionDuration={0}
+          TransitionComponent={!effectsEnabled ? undefined : undefined}
+          transitionDuration={!effectsEnabled ? 225 : 0}
           slotProps={{
             paper: {
-              component: MotionPaper,
-              initial: "initial",
-              animate: "animate",
-              exit: "exit",
-              variants: menuAnimation,
+              variant: 'MenuBlur',
+              component: effectsEnabled ? MotionPaper : Paper,
+              ...(effectsEnabled ? {
+                initial: "initial",
+                animate: "animate",
+                exit: "exit",
+                variants: menuAnimation
+              } : {}),
                sx: {
-                borderRadius: '20px', 
-                background: 'rgba(43, 43, 43, 0.75)',
-                backdropFilter: 'blur(15px) saturate(150%)', 
-                WebkitBackdropFilter: 'blur(15px) saturate(150%)',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08)', 
-                border: '1px solid rgba(75, 75, 75, 1)',
-                overflow: 'hidden',
             } ,
             } as any
           }}

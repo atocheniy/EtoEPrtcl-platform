@@ -18,6 +18,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Tag> Tags { get; set; }
     public DbSet<ProjectMember> ProjectMembers { get; set; }
     
+    public DbSet<FileHistory> FileHistories { get; set; }
+    
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
@@ -52,6 +54,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .Property(u => u.Theme)
             .HasConversion<string>();
         
+        builder.Entity<ApplicationUser>()
+            .Property(u => u.Mode)
+            .HasConversion<string>();
         
         
         builder.Entity<ASP_Server.Models.File>()

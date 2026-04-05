@@ -5,6 +5,7 @@ import { Box, Checkbox, Divider, FormControlLabel, Paper, Slider, Stack, Typogra
 
 import * as d3 from 'd3-force';
 import { useEncryption } from '../context/EncryptionContext';
+import { ApplicationTheme, PerformanceMode } from '../../types/auth';
 
 interface GraphNode extends NodeObject {
   id: string;
@@ -41,6 +42,7 @@ const GraphView: React.FC<GraphViewProps> = ({ files, projects, onNodeClick }) =
   const [showLinks, setShowLinks] = useState(true);
 
   const { orbColors } = useEncryption();
+  const { mode, currentTheme } = useEncryption();
 
   const fgRef = useRef<any>(null); 
 
@@ -247,10 +249,9 @@ useEffect(() => {
           p: 2.5,
           mt: 7,
           borderRadius: 4,
-          bgcolor: 'rgba(20, 20, 20, 0.7)',
-          backdropFilter: 'blur(10px)',
+          bgcolor: currentTheme === ApplicationTheme.Dark ? ( mode === PerformanceMode.Off ? 'rgba(20, 20, 20, 0.7)' : 'rgba(20, 20, 20)' ) : ( mode === PerformanceMode.Off ? 'rgba(245, 245, 245, 0.7)' : 'rgba(245, 245, 245)' ),
+          backdropFilter:  mode === PerformanceMode.Off ? 'blur(10px)' : undefined,
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          color: 'white',
           zIndex: 1000
         }}
       >

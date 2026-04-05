@@ -1,5 +1,5 @@
 import { $api } from "../api/axios";
-import type { ApplicationTheme, UpdateEmail, UpdateName, User } from "../types/auth";
+import type { ApplicationTheme, PerformanceMode, UpdateEmail, UpdateName, User } from "../types/auth";
 
 export const UserService = {
     async getUser() {
@@ -21,6 +21,14 @@ export const UserService = {
 
     async updateTheme(theme: ApplicationTheme) {
         return await $api.patch('/auth/theme', { theme });
+    },
+
+    async updateMode(mode: PerformanceMode) {
+        return await $api.patch('/auth/mode', { mode });
+    },
+
+    async deleteAccount() {
+        return await $api.delete(`/auth/me`);
     },
 
     async searchUser(email: string) {

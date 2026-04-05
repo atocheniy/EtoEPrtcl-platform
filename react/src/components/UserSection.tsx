@@ -8,7 +8,8 @@ import { useEncryption } from './context/EncryptionContext';
 import { ColorSettingsDialog } from './ui/ColorSettingsDialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import {Paper } from '@mui/material';
-import { MotionPopover } from './ui/MotionPopover';
+import { ApplicationTheme } from '../types/auth';
+import { MotionMenu } from './ui/MotionMenu';
 
 const menuAnimation = {
   initial: { 
@@ -48,7 +49,7 @@ export const UserSection = () => {
 
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
-    const { userData, logout } = useEncryption(); 
+    const { userData, logout, currentTheme } = useEncryption(); 
     const navigate = useNavigate();
 
     const [openColorDialog, setOpenColorDialog] = useState(false);
@@ -91,7 +92,7 @@ export const UserSection = () => {
                 <Avatar
                     alt={userData.fullName.toUpperCase()}
                     src="/static/images/avatar/1.jpg"
-                    sx={{ width: 48, height: 48, flexShrink: 0, bgcolor: '#ffffff', }}
+                    sx={{ width: 48, height: 48, flexShrink: 0, bgcolor: currentTheme === ApplicationTheme.Dark ? '#ffffff' : '#383838', }}
                 >{userData.fullName.toUpperCase().substring(0, 2)}</Avatar>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography fontWeight={600} noWrap>
@@ -103,7 +104,7 @@ export const UserSection = () => {
                 </Box>
             </Box>
 
-         <MotionPopover
+         <MotionMenu
                 open={open}
                 anchorEl={anchorEl}
                 onClose={() => setAnchorEl(null)}
@@ -114,7 +115,7 @@ export const UserSection = () => {
             <List disablePadding>
                 <ListItemButton onClick={() => {handleClose(); navigate('/user_profile')}} sx={{
                 mx: 1,
-                my: 1,
+                my: 0.5,
                 borderRadius: '12px',
                 transition: 'background-color 0.15s ease',
 
@@ -124,21 +125,9 @@ export const UserSection = () => {
             }}>
                     <ListItemText primary="Профиль" />
                 </ListItemButton >
-                <ListItemButton sx={{
-                mx: 1,
-                my: 1,
-                borderRadius: '12px',
-                transition: 'background-color 0.15s ease',
-
-                '&:hover': {
-                    backgroundColor: 'rgba(255,255,255,0.12)',
-                },
-            }}>
-                    <ListItemText primary="Настройки" />
-                </ListItemButton>
                 <ListItemButton onClick={() => {handleClose(); setOpenColorDialog(true)}} sx={{
                 mx: 1,
-                my: 1,
+                my: 0.5,
                 borderRadius: '12px',
                 transition: 'background-color 0.15s ease',
 
@@ -146,11 +135,11 @@ export const UserSection = () => {
                     backgroundColor: 'rgba(255,255,255,0.12)',
                 },
             }}>
-                    <ListItemText primary="Настройки цвета" />
+                    <ListItemText primary="Настройки сайта" />
                 </ListItemButton>
                 <ListItemButton sx={{
                 mx: 1,
-                my: 1,
+                my: 0.5,
                 borderRadius: '12px',
                 transition: 'background-color 0.15s ease',
 
@@ -162,7 +151,7 @@ export const UserSection = () => {
                     <ListItemText primary="Выйти" onClick={() => {handleClose(); handleLogout(); navigate('/login')}} />
                 </ListItemButton>
             </List>
-       </MotionPopover>
+       </MotionMenu>
         <ColorSettingsDialog open={openColorDialog} onClose={() => setOpenColorDialog(false)} />
         </>
     );

@@ -88,6 +88,19 @@ public class FilesController : ControllerBase
                 .Any(pm => pm.ProjectId == f.ProjectId && pm.UserId == userId && (pm.Role == "Owner" || pm.Role == "Editor")));
         if (file == null) return NotFound("Файл не найден");
         
+        if (model.Content != null) 
+        {
+            var historyRecord = new FileHistory
+            {
+                FileId = file.Id,
+                Content = file.Content,
+                Iv = file.Iv,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.FileHistories.Add(historyRecord);
+        }
+        
         if (model.Tags != null)
         {
             file.Tags.Clear();
@@ -131,10 +144,13 @@ public class FilesController : ControllerBase
     }
     
     [HttpGet("project/{projectId}")]
-    [Authorize]
-    [SignatureRequired]
-    public IActionResult GetFilesByProject(Guid projectId)
+    [AllowAnonymous]
+    public async Task<IActionResult> GetFilesByProject(Guid projectId)
     {
+        var project = await _context.Projects.FindAsync(projectId);
+        
+        if (project == null || (!project.IsPublic && User.FindFirstValue(ClaimTypes.NameIdentifier) == null)) 
+            return Unauthorized();
         
         var files = _context.Files
             .Include(f => f.LinksFrom)
@@ -147,16 +163,27 @@ public class FilesController : ControllerBase
     }
     
     [HttpGet("{fileId}")]
-    [Authorize]
-    [SignatureRequired]
+    [AllowAnonymous]
     public async Task<IActionResult> GetFileContent(Guid fileId)
     {
         var file = await _context.Files
+            .Include(f => f.Project)   
             .Include(f => f.Tags)           
             .Include(f => f.LinksFrom)     
             .FirstOrDefaultAsync(f => f.Id == fileId);
 
         if (file == null) return NotFound();
+        
+        if (!file.Project.IsPublic)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+            
+            var isMember = await _context.ProjectMembers
+                .AnyAsync(pm => pm.ProjectId == file.ProjectId && pm.UserId == userId);
+            
+            if (!isMember) return Forbid("У вас нет доступа к этому приватному файлу");
+        }
 
         return Ok(new { file.Id, file.Name, file.Content, file.Iv, Tags = file.Tags.Select(t => new { t.EncryptedName, t.Iv, t.Index }), Links = file.LinksFrom.Select(l => l.TargetFileId)  });
     }
@@ -185,5 +212,19 @@ public class FilesController : ControllerBase
             .ToListAsync();
 
         return Ok(allFiles);
+    }
+    
+    [HttpGet("{id}/history")]
+    [Authorize]
+    public async Task<IActionResult> GetFileHistory(Guid id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var history = await _context.FileHistories
+            .Where(h => h.FileId == id && h.File.Project.UserId == userId) 
+            .OrderByDescending(h => h.CreatedAt)
+            .Select(h => new { h.Id, h.CreatedAt, h.Iv, h.Content, userEmail = h.User.Email })
+            .ToListAsync();
+
+        return Ok(history);
     }
 }

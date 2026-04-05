@@ -145,10 +145,11 @@
             );
         },
 
-        async hashTag(tagName: string, salt: string): Promise<string> {
+        async hashTag(tagName: string, salt: string, projectId: string): Promise<string> {
             const encoder = new TextEncoder();
             
-            const data = encoder.encode(tagName.toLowerCase() + salt);
+            // const data = encoder.encode(tagName.toLowerCase() + salt);
+            const data = encoder.encode(tagName.toLowerCase() + salt + projectId);
             const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
             return _bufferToBase64(hashBuffer);
         },

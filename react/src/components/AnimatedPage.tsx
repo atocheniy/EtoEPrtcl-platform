@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react'; 
+import { useEncryption } from './context/EncryptionContext';
+import { ApplicationTheme } from '../types/auth';
 
 const pageVariants = {
     initial: {
@@ -31,6 +33,7 @@ interface AnimatedPageProps {
 }
 
 const AnimatedPage = ({ children }: AnimatedPageProps) => {
+    const { currentTheme } = useEncryption();
     return (
         <motion.div
             variants={pageVariants}
@@ -44,6 +47,8 @@ const AnimatedPage = ({ children }: AnimatedPageProps) => {
                 position: 'absolute',
                 overflow: 'hidden',
                 willChange: 'transform, opacity',
+                backgroundColor: currentTheme === ApplicationTheme.Dark ? 'rgb(10, 10, 10)' : 'rgb(230, 230, 230)',
+                transition: 'background-color 0.3s ease',
             }}
         >
             {children}

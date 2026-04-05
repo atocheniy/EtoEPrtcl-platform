@@ -10,8 +10,9 @@ import PublicIcon from '@mui/icons-material/Public';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { textFieldStyle, whiteSolidButton } from './css/sx';
 
-import { ProjectPriority, ProjectStatus, type Project } from "../types/auth";
+import { ApplicationTheme, ProjectPriority, ProjectStatus, type Project } from "../types/auth";
 import { MotionTextField } from './ui/MotionTextField';
+import { useEncryption } from './context/EncryptionContext';
 
 interface ProjectSettingsProps {
     projectData: { id: string; name: string; iv: string, isPublic: boolean, priority: ProjectPriority, status: ProjectStatus };
@@ -20,7 +21,9 @@ interface ProjectSettingsProps {
         name: string; 
         isPublic: boolean; 
         priority: ProjectPriority; 
-        status: ProjectStatus 
+        status: ProjectStatus;
+        publicEncryptedKey?: string;
+        publicKeyIv?: string;
     }) => void;
     onClose: () => void;
     onDelete: (id: string) => void;
@@ -32,13 +35,18 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
     const [priority, setPriority] = useState<ProjectPriority>(projectData.priority);
     const [status, setStatus] = useState<ProjectStatus>(projectData.status);
 
+    const { currentTheme } = useEncryption();
+
     useEffect(() => {
-        if (projectData.id !== "123") {
-            setName(projectData.name);
-            setIsPublic(projectData.isPublic);
-            setPriority(projectData.priority);
-            setStatus(projectData.status);
-        }
+        console.log(projectData.name)
+        console.log(projectData.isPublic)
+        console.log(projectData.priority)
+        console.log(projectData.status)
+
+        setName(projectData.name);
+        setIsPublic(projectData.isPublic);
+        setPriority(projectData.priority);
+        setStatus(projectData.status);
     }, [projectData]);
 
     const handleSave = () => {
@@ -79,9 +87,11 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
                         label="Название проекта"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        variant="outlined"
-                       sx={{'& .MuiInputBase-input': { color: 'white' }, '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' }, '& .MuiInputLabel-root.Mui-focused': { color: '#fff' }, '& .MuiOutlinedInput-root': { borderRadius: '15px', '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' }, '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' }, '&.Mui-focused fieldset': { borderColor: 'white' }, }, }}
-                    />
+                        color='secondary'
+                        sx={{'& .MuiOutlinedInput-root': {
+        borderRadius: '15px',}
+                        }}
+                            />
                 </Box>
 
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -89,8 +99,11 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
                     <MotionTextField
     label="Статус"
     value={status}
-    onChange={setStatus}
-    sx={selectStyle}
+    onChange={(val) => setStatus(val)}
+    color='secondary'
+    sx={{'& .MuiOutlinedInput-root': {
+        borderRadius: '15px',}
+                        }}
 >
                         <MenuItem value={ProjectStatus.Planning} sx={{ gap: 1.5, py: 1, mx: 0.5, borderRadius: '10px', }}>Планирование</MenuItem>
                         <MenuItem value={ProjectStatus.Active} sx={{ gap: 1.5, py: 1, mt: 0.5, mx: 0.5, borderRadius: '10px', }}>В работе</MenuItem>
@@ -101,8 +114,11 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
 <MotionTextField
     label="Приоритет"
     value={priority}
-    onChange={setPriority}
-    sx={selectStyle}
+    onChange={(val) => setPriority(val)}
+    color='secondary'
+    sx={{'& .MuiOutlinedInput-root': {
+        borderRadius: '15px',}
+                        }}
 >
 
                         <MenuItem value={ProjectPriority.Low} sx={{ gap: 1.5, py: 1, mx: 0.5, borderRadius: '10px', }}>Низкий</MenuItem>
@@ -122,10 +138,10 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
                         <Stack direction="row" spacing={2} alignItems="center">
                             {isPublic ? <PublicIcon sx={{ color: '#4ade80' }} /> : <LockIcon sx={{ color: '#818cf8' }} />}
                             <Box>
-                                <Typography variant="subtitle1" sx={{ color: 'white' }}>
+                                <Typography variant="subtitle1" sx={{}}>
                                     {isPublic ? 'Публичный доступ' : 'Приватный проект'}
                                 </Typography>
-                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                                <Typography variant="caption" sx={{ color: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }}>
                                     {isPublic ? 'Виден всем пользователям' : 'Доступен только вам и приглашенным'}
                                 </Typography>
                             </Box>
@@ -149,7 +165,7 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
                     <Typography variant="h6" sx={{ color: '#ff5252', fontWeight: 700, mb: 1 }}>
                         Удаление
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', mb: 2 }}>
+                    <Typography variant="body2" sx={{  mb: 2 }}>
                         Удаление проекта приведет к безвозвратному удалению всех связанных файлов и данных.
                     </Typography>
                     <Button 
@@ -175,7 +191,7 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
                 <Stack direction="row" spacing={2} justifyContent="flex-end">
                     <Button 
                         onClick={onClose}
-                        sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: 'white' } }}
+                        sx={{  }}
                     >
                         Отмена
                     </Button>

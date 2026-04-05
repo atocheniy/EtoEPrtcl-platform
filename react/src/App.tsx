@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import HomePage from './pages/HomePage'
 import UserPage from './pages/UserPage'
+import SharePage from './pages/SharePage';
 
 import { AnimatePresence } from 'framer-motion';
 
@@ -34,6 +35,9 @@ function AnimatedRoutes() {
                             <RequireAuth>
                                 <MainContainer />
                             </RequireAuth> } />
+                    <Route path='/share/:projectId' element={
+                            <SharePage />
+                    } />
                     <Route path='/user_profile' element={
                             <RequireAuth>
                                 <UserPage />

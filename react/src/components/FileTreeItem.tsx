@@ -4,16 +4,18 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
-import { listVariants } from '../types/auth';
+import { ApplicationTheme, listVariants } from '../types/auth';
 import FolderIcon from '@mui/icons-material/Folder';
 import { motion } from 'framer-motion';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import { useEncryption } from './context/EncryptionContext';
 
 const MotionBox = motion(Box);
 
 export const FileTreeItem = ({ item, level, selectedId, onFileSelect, expanded, onToggle, onMenuOpen, getIcon, masterKey, orbColors, index }: any) => {
     const isFolder = item.isFolder;
     const isOpen = expanded.includes(item.id);
+    const { currentTheme } = useEncryption();
 
     const getAccentColor = (alpha: string) => orbColors[1].replace(/[\d.]+\)$/g, `${alpha})`);
 
@@ -66,7 +68,7 @@ export const FileTreeItem = ({ item, level, selectedId, onFileSelect, expanded, 
                         bgcolor: 'primary.light',
                         color: 'primary.contrastText',
                         '&:hover': {
-                            bgcolor: 'white',
+                            bgcolor: currentTheme === ApplicationTheme.Dark ? 'white' : 'gray',
                         },
                         '& .MuiListItemIcon-root': {
                             color: 'inherit',

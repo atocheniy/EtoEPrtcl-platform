@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useTransition } from 'react'
 import LeftSidebar from '../components/LeftSidebar.tsx';
 import LeftSidebarFiles from '../components/LeftSidebarFiles.tsx';
 import ContentPanel, { type ContentPanelHandle } from '../components/ContentPanel.tsx';
-import RightSidebar from '../components/RightSidebar.tsx';
+import RightSidebar, { type RightSidebarHandle } from '../components/RightSidebar.tsx';
 import '../components/css/MainContainer.css'
 import TopPanel from '../components/TopPanel.tsx';
 import ToolsPanel, { type MarkdownCommand } from '../components/ToolsPanel.tsx';
@@ -78,6 +78,7 @@ function MainContainer() {
     const lastSavedContentRef = useRef<string>('');
     const activeFileIdRef = useRef<string | null>(null);
     const fileNameRef = useRef<string>('');
+    const rightSidebarRef = useRef<RightSidebarHandle>(null);
 
     //! === Functions ===
 
@@ -119,7 +120,7 @@ function MainContainer() {
 
         try {
 
-            const { tags, linkedFileIds } = await TagsService.extractMetadata(contentToSave, projectFiles, currentProjectKey, userData.salt);
+            const { tags, linkedFileIds } = await TagsService.extractMetadata(contentToSave, projectFiles, currentProjectKey, userData.salt, projectData.id);
             const newIvRaw = window.crypto.getRandomValues(new Uint8Array(12));
             
             const encoder = new TextEncoder();
@@ -146,6 +147,7 @@ function MainContainer() {
             lastSavedContentRef.current = contentToSave;
 
             await $api.put(`/files/${activeFileId}`, payload);
+            rightSidebarRef.current?.refreshHistory(); 
 
             setProjectFiles(prev => prev.map(f => 
                 f.id === activeFileId ? { ...f, iv: payload.iv, tags, links: linkedFileIds } : f
@@ -211,6 +213,22 @@ function MainContainer() {
         }
     };
 
+    const handleRestoreVersion = async (version: { content: string, iv: string }) => {
+        if (!currentProjectKey) return;
+
+        try {
+            const restoredText = await DCrypto.decrypt(version.content, version.iv, currentProjectKey);
+
+            setFileContent(restoredText);
+            contentRef.current = restoredText;
+
+            console.log("Версия успешно восстановлена");
+        } catch (e) {
+            console.error("Ошибка при восстановлении версии:", e);
+            alert("Не удалось расшифровать старую версию.");
+        }
+    };
+
     const closeFile = async () => {
         // console.log("close file");
 
@@ -241,12 +259,10 @@ function MainContainer() {
             ]);
 
             if (savedMaster) {
-                // console.log("Master Key восстановлен");
                 setMasterKey(savedMaster);
             }
             
             if (savedSigning) {
-                // console.log("Signing Key восстановлен");
                 setSigningKey(savedSigning);
             }
         };
@@ -371,7 +387,7 @@ function MainContainer() {
             transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
             style={{ overflow: 'hidden', display: 'flex' }}
         >
-            <RightSidebar content={fileContent} tags={currentFileTags} links={currentFileLinks} allFiles={projectFiles} onFileSelect={handleFileSelect} />
+            <RightSidebar ref={rightSidebarRef} content={fileContent} tags={currentFileTags} links={currentFileLinks} allFiles={projectFiles} onFileSelect={handleFileSelect} activeFileId={activeFileId} handleRestore={handleRestoreVersion}/>
         </motion.div>
       </div>
     </AnimatedPage>

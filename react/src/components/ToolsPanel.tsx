@@ -15,6 +15,8 @@ import ImageIcon from '@mui/icons-material/Image';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import BackupTableIcon from '@mui/icons-material/BackupTable';
 import AlignHorizontalLeftIcon from '@mui/icons-material/AlignHorizontalLeft';
+import { useEncryption } from './context/EncryptionContext';
+import { ApplicationTheme, PerformanceMode } from '../types/auth';
 
 export type MarkdownCommand = 'H' | 'bold' | 'italic' | 'code' | 'quote' | 'ul' | 'ol' | 'link' | 'image' | 'todo' | 'table';
 
@@ -23,14 +25,17 @@ interface ToolsPanelProps {
 }
 
 function ToolsPanel({ onCommand }: ToolsPanelProps) {
+
+    const { mode, theme, currentTheme } = useEncryption();
+
   const buttonStyle = {
-        color: 'rgba(255, 255, 255, 0.7)',
+        color: currentTheme === ApplicationTheme.Dark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
         transition: 'all 0.2s ease-in-out',
         borderRadius: "15px",
         ml: 0.5,
         mr: 0.5,
         '&:hover': {
-            color: '#fff',
+            color: currentTheme === ApplicationTheme.Dark ? '#fff' : '#000',
             bgcolor: 'rgba(255, 255, 255, 0.1)',
             scale: 1.1,
         }
@@ -54,10 +59,10 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
             },
             tooltip: {
             sx: {
-                bgcolor: 'rgba(20, 20, 20, 0.9)', 
-                backdropFilter: 'blur(4px)',
+                bgcolor: currentTheme === ApplicationTheme.Dark ? (mode === PerformanceMode.Off ? 'rgba(20, 20, 20, 0.9)' : 'rgba(20, 20, 20)') : (mode === PerformanceMode.Off ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255)'),
+                backdropFilter: mode === PerformanceMode.Off ? 'blur(4px)' : undefined,
                 border: '1px solid rgba(255, 255, 255, 0.1)',
-                color: 'white',
+                color:  currentTheme === ApplicationTheme.Dark ? 'white' : 'black',
                 borderRadius: '8px',
                 padding: '8px 12px',
                 fontSize: '12px'
@@ -65,7 +70,7 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
             },
             arrow: {
             sx: {
-                color: 'rgba(20, 20, 20, 0.9)', 
+                color:  currentTheme === ApplicationTheme.Dark ? 'rgba(20, 20, 20, 0.9)' : 'rgba(255, 255, 255, 0.9)', 
             },
             },
         }
@@ -75,6 +80,7 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
     <>
         <Paper
         elevation={1}
+        variant='blur'
         sx={{
             
             width: 'auto',
@@ -85,8 +91,6 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
             zIndex: '100',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 6, 
-            bgcolor: '#141414b5',    
-            backdropFilter: "blur(5px) saturate(150%) !important",  
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

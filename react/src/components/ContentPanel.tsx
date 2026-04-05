@@ -54,7 +54,7 @@ import { useEncryption } from './context/EncryptionContext';
 import ProjectSettings from './ProjectSettings';
 import { ProjectService } from '../services/projectService';
 import { DCrypto } from '../services/cryptoService';
-import type { Project } from '../types/auth';
+import { ApplicationTheme, PerformanceMode, type Project } from '../types/auth';
 import LinkIcon from '@mui/icons-material/Link';
 import TagIcon from '@mui/icons-material/Tag';
 
@@ -150,6 +150,7 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
 
    const { currentProjectKey } = useEncryption();
     const isProject = Boolean(currentProjectId);
+    const { mode, currentTheme } = useEncryption();
 
     const glowAnimation = `
   @keyframes borderPulse {
@@ -159,7 +160,7 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
   }
 `;
 
-const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
+const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, currentTheme === ApplicationTheme.Dark ? '0.15)' : '0.2)');
 
    useEffect(() => {
        valueRef.current = value;
@@ -195,8 +196,9 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
             maxWidth: "900px", 
             margin: "0 auto", 
             paddingBottom: "80px",
-            background: "rgb(20, 20, 20)",
+            background: currentTheme === ApplicationTheme.Dark ? "rgb(20, 20, 20)" : "rgb(245, 245, 245)",
             borderRadius: "10px",
+            transition: "background-color 0.3s",
         },
         ".cm-gutters": {
             display: "none"
@@ -204,12 +206,12 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
         "&.cm-focused": {
             outline: "none"
         }
-   }), [fontSize]);
+   }), [fontSize, currentTheme, orbColors]);
 
     const extensions = useMemo(() => [
         markdown({ base: markdownLanguage }),
         EditorView.lineWrapping, 
-        isDarkMode ? githubDark : githubLight, 
+        currentTheme === ApplicationTheme.Dark ? githubDark : githubLight, 
         editorTheme,
     ], [editorTheme]);
 
@@ -460,12 +462,17 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
             display: 'flex',
             position: 'relative',
             
-            background: `linear-gradient(to bottom, 
+            background: currentTheme === ApplicationTheme.Dark ? `linear-gradient(to bottom, 
       rgb(20, 20, 20) 0px, 
       rgb(20, 20, 20) 50px, 
       rgba(20, 20, 20, 0.7) 51px, 
-      rgba(20, 20, 20, 0.7) 100%)`,
-            border: '1px solid rgb(27, 27, 27)',
+      rgba(20, 20, 20, 0.7) 100%)` : 
+      `linear-gradient(to bottom, 
+      rgba(255, 255, 255, 0.8) 0px, 
+      rgba(255, 255, 255, 0.8) 50px,
+      rgba(255, 255, 255, 0.5) 51px,
+      rgba(255, 255, 255, 0.5) 100%)`,
+            border: currentTheme === ApplicationTheme.Dark ? '1px solid rgb(27, 27, 27)' : '1px solid rgba(0, 0, 0, 0.08)',
             overflow: 'hidden',
             '--glow-color': primaryGlow,
            '&::after': {
@@ -479,10 +486,11 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
             pointerEvents: 'none',
             zIndex: 0,
             
-            animation: 'borderPulse 8s infinite ease-in-out',
+            animation: mode === PerformanceMode.Off ? 'borderPulse 8s infinite ease-in-out' : 'none',
             
             opacity: showGlow ? 1 : 0, 
-            transition: 'opacity 1.5s ease-in-out', 
+            transition: 'opacity 1.5s ease-in-out, background-color 0.3s, border-color 0.3s', 
+            
         }
         }}
         ><style>{glowAnimation}</style>
@@ -508,11 +516,11 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
  <AnimatePresence mode="wait"> 
     {isProjectSettinsOpen ? (
          <motion.div
-                    key="project-settings" 
-                    variants={panelVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
+                    key={mode === PerformanceMode.Off ? "project-settings" : undefined}
+                    variants={mode === PerformanceMode.Off ? panelVariants : undefined}
+                    initial={mode === PerformanceMode.Off ? "initial" : undefined}
+                    animate={mode === PerformanceMode.Off ? "animate" : undefined}
+                    exit={mode === PerformanceMode.Off ? "exit" : undefined}
                     style={{ width: '100%', height: '100%', overflowY: 'auto' }}
                 >
             <Box sx={{ 
@@ -538,13 +546,25 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
                      try {
                         const encrypted = await DCrypto.encrypt(updatedData.name, currentProjectKey);
 
+                        if (updatedData.isPublic) {
+                            const rawKey = await window.crypto.subtle.exportKey("raw", currentProjectKey);
+                            
+                            const publicMasterKey = await DCrypto.deriveMasterKey("PUBLIC_ACCESS", projectData.id);
+                            const wrapped = await DCrypto.encrypt(DCrypto.bufferToBase64(rawKey), publicMasterKey);
+
+                            updatedData.publicEncryptedKey = wrapped.content;
+                            updatedData.publicKeyIv = wrapped.iv;
+                        }
+
                         await ProjectService.updateProject({
                             id: updatedData.id,
                             name: encrypted.content,
                             iv: encrypted.iv,
                             isPublic: updatedData.isPublic,
                             priority: updatedData.priority,
-                            status: updatedData.status
+                            status: updatedData.status,
+                            publicEncryptedKey: updatedData.publicEncryptedKey,
+                            publicKeyIv: updatedData.publicKeyIv,
                         });
 
                         await refreshProjects();
@@ -572,11 +592,11 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
     </motion.div>
     ) : activeFileId ?  
            (  <motion.div
-                    key={`file-${activeFileId}`}
-                    variants={panelVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
+                    key={mode === PerformanceMode.Off ? `file-${activeFileId}` : undefined}
+                    variants={mode === PerformanceMode.Off ? panelVariants : undefined}
+                    initial={mode === PerformanceMode.Off ? "initial" : undefined}
+                    animate={mode === PerformanceMode.Off ? "animate" : undefined}
+                    exit={mode === PerformanceMode.Off ? "exit" : undefined}
                     style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
                 > <div key={activeFileId} ref={editorWrapperRef} data-color-mode="dark" style={{ width: '100%', height: "100%", opacity: isLoading ? 0 : 1, flex: 1, minHeight: 0, transition: 'opacity 0.3s ease', fontSize: `${fontSize}px` }}>
 
@@ -592,6 +612,7 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
         </Box>
     ) : (
             <MDEditor
+            data-color-mode={currentTheme === ApplicationTheme.Dark ? "dark" : "light"}
                 key={`preview-${activeFileId}`}
                 value={value} 
                 height="100%"
@@ -606,6 +627,7 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
                                 remarkBreaks,  
                                 remarkAlert,   
                             ],
+                            
                           
                             rehypePlugins: [
                                 rehypeKatex,    
@@ -630,7 +652,7 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
                         />)
             ) : (
                 isImageContent ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'white', opacity: 0.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', opacity: 0.5 }}>
             <ImageIcon sx={{ fontSize: 64, mb: 2 }} />
             <Typography>Это изображение. Переключитесь в режим превью, чтобы посмотреть его.</Typography>
         </Box>
@@ -640,7 +662,7 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
                     ref={editorRef}
                     readOnly={readOnly}
                     height="100%"
-                    theme={githubDark}
+                    theme={currentTheme === ApplicationTheme.Dark ? githubDark : githubLight}
                     extensions={extensions}
                     onChange={handleChange}
                     basicSetup={{
@@ -660,11 +682,11 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
     `}</style>
   </div> </motion.div>) : (
     <motion.div
-                    key="empty-state"
-                    variants={panelVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
+                    key={mode === PerformanceMode.Off ? "empty-state" : undefined}
+                    variants={ mode === PerformanceMode.Off ? panelVariants : undefined}
+                    initial={mode === PerformanceMode.Off ? "initial" : undefined}
+                    animate={mode === PerformanceMode.Off ? "animate" : undefined}
+                    exit={mode === PerformanceMode.Off ? "exit" : undefined}
                     style={{ width: '100%', height: '100%' }}
                 >
     <Box sx={{ 
@@ -675,7 +697,7 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
             alignItems: 'center',
             justifyContent: 'center',
             '--glow-color': primaryGlow,
-            animation: 'borderPulse 8s infinite ease-in-out',
+            animation: mode === PerformanceMode.Off ? 'borderPulse 8s infinite ease-in-out' : 'none',
             borderRadius: 3, 
         }}>
             <style>{glowAnimation}</style>
@@ -688,45 +710,45 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, '0.15)');
                 pointerEvents: 'none',
                 px: 4
             }}>
-                <Skeleton animation="wave" variant="text" width="60%" height={60} sx={{ bgcolor: 'rgba(255,255,255,0.1)', mb: 4 }} />
+                <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="60%" height={60} sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.06)' : 'rgba(58, 58, 58, 0.29)', mb: 4 }} />
     
     <Stack spacing={2.5}>
         <Box>
-            <Skeleton animation="wave" variant="text" width="100%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
-            <Skeleton animation="wave" variant="text" width="95%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
-            <Skeleton animation="wave" variant="text" width="40%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="100%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.06)' : 'rgba(58, 58, 58, 0.29)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="95%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.06)' : 'rgba(58, 58, 58, 0.29)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="40%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.06)' : 'rgba(58, 58, 58, 0.29)' }} />
         </Box>
 
         <Box sx={{ borderLeft: '4px solid rgba(255,255,255,0.1)', pl: 3, my: 2 }}>
-            <Skeleton animation="wave" variant="text" width="80%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
-            <Skeleton animation="wave"  variant="text" width="70%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="80%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.04)' : 'rgba(58, 58, 58, 0.1)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false}  variant="text" width="70%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.04)' : 'rgba(58, 58, 58, 0.1)' }} />
         </Box>
 
         <Stack direction="row" spacing={2} alignItems="center">
-            <Skeleton animation="wave" variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: 'rgba(255,255,255,0.08)' }} />
-            <Skeleton animation="wave" variant="text" width="30%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.08)' : 'rgba(58, 58, 58, 0.29)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="30%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.06)' : 'rgba(58, 58, 58, 0.29)' }} />
         </Stack>
         <Stack direction="row" spacing={2} alignItems="center">
-            <Skeleton animation="wave" variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: 'rgba(255,255,255,0.08)' }} />
-            <Skeleton animation="wave" variant="text" width="50%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.08)' : 'rgba(58, 58, 58, 0.29)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="50%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.06)' : 'rgba(58, 58, 58, 0.29)' }} />
         </Stack>
 
         <Box sx={{ pt: 2 }}>
-            <Skeleton animation="wave" variant="text" width="100%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
-            <Skeleton animation="wave" variant="text" width="85%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="100%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.04)' : 'rgba(58, 58, 58, 0.1)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="85%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.04)' : 'rgba(58, 58, 58, 0.1)' }} />
         </Box>
          <Stack direction="row" spacing={2} alignItems="center">
-            <Skeleton animation="wave" variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: 'rgba(255,255,255,0.08)' }} />
-            <Skeleton animation="wave" variant="text" width="30%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.08)' : 'rgba(58, 58, 58, 0.29)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="30%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.06)' : 'rgba(58, 58, 58, 0.29)' }} />
         </Stack>
         <Stack direction="row" spacing={2} alignItems="center">
-            <Skeleton animation="wave" variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: 'rgba(255,255,255,0.08)' }} />
-            <Skeleton animation="wave" variant="text" width="50%" sx={{ bgcolor: 'rgba(255,255,255,0.06)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="rectangular" width={18} height={18} sx={{ borderRadius: 0.5, bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.08)' : 'rgba(58, 58, 58, 0.29)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="50%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.06)' : 'rgba(58, 58, 58, 0.29)' }} />
         </Stack>
 
         <Box sx={{ pt: 2 }}>
-            <Skeleton animation="wave" variant="text" width="100%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
-            <Skeleton animation="wave" variant="text" width="85%" sx={{ bgcolor: 'rgba(255,255,255,0.04)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="100%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.04)' : 'rgba(58, 58, 58, 0.1)' }} />
+            <Skeleton animation = {mode === PerformanceMode.Off ? "wave" : false} variant="text" width="85%" sx={{ bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgba(255,255,255,0.04)' : 'rgba(58, 58, 58, 0.1)' }} />
         </Box>
     </Stack>
             </Box>

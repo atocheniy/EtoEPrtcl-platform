@@ -14,6 +14,7 @@ import { AuthService } from '../services/authService';
 
 import { useNavigate } from 'react-router';
 import { useEncryption } from './context/EncryptionContext.tsx';
+import { ApplicationTheme, PerformanceMode } from '../types/auth.ts';
 
 function Form() {
     const navigate = useNavigate();
@@ -22,6 +23,7 @@ function Form() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { initKeysForLogin } = useEncryption();
+    const { mode, currentTheme } = useEncryption();
 
     const handleLogin = async () => {
         try {
@@ -52,8 +54,8 @@ function Form() {
       sx={{
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 6,
-        bgcolor: '#222222b5',
-        backdropFilter: "blur(10px)", 
+        bgcolor: currentTheme === ApplicationTheme.Dark ? '#222222b5' : '#f5f5f5',
+        backdropFilter: mode === PerformanceMode.Off ? "blur(10px)" : undefined,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -64,7 +66,7 @@ function Form() {
         boxSizing: 'border-box'
       }}>
 
-      <Typography variant="h5" sx={{ color: 'white', fontWeight: 600, mb: 1 }}>
+      <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
         Вход в аккаунт
       </Typography>
 
@@ -81,21 +83,19 @@ function Form() {
       >
         <TextField 
             label="Почта" 
-            variant="outlined" 
+            color='secondary'
             fullWidth
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            sx={textFieldStyle}
         />
         
         <TextField 
             label="Пароль" 
             type="password" 
-            variant="outlined" 
+            color='secondary'
             fullWidth
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            sx={textFieldStyle}
         />
       </Box>
 
@@ -113,15 +113,8 @@ function Form() {
             mt: 1,
             borderRadius: '12px',
             textTransform: 'none',
-            color: 'black',
             border: '1px solid rgba(112, 112, 112, 0.3)',
-            background: 'white',
             transition: '0.3s',
-            '&:hover': {
-                 border: '1px solid rgba(255, 255, 255, 1)',
-                 background: 'rgba(82, 82, 82, 0.05)',
-                 color: "white"
-            }
         }}
       >
         Войти
@@ -144,15 +137,8 @@ function Form() {
                 width: "200px",
                 borderRadius: '12px',
                 textTransform: 'none',
-                color: 'white',
                 border: '1px solid rgba(255, 255, 255, 0.61)',
-                background: 'transparent',
                 transition: '0.3s',
-                '&:hover': {
-                    border: '1px solid rgba(255, 255, 255, 1)',
-                    background: 'rgba(82, 82, 82, 0.05)',
-                    color: "white"
-                }
             }}
         >
             Сбросить пароль

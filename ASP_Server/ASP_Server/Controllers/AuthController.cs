@@ -30,7 +30,7 @@ namespace ASP_Server.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterInfo model)
         {
-            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv, ExchangePublicKey = model.ExchangePublicKey, EncryptedExchangePrivateKey = model.EncryptedExchangePrivateKey, ExchangeKeyIv = model.ExchangeKeyIv, SignSalt = model.SignSalt, Theme = model.Theme};
+            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv, ExchangePublicKey = model.ExchangePublicKey, EncryptedExchangePrivateKey = model.EncryptedExchangePrivateKey, ExchangeKeyIv = model.ExchangeKeyIv, SignSalt = model.SignSalt, Theme = model.Theme, Mode = model.Mode};
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded) return Ok(new { message = "Регистрация успешна" });
@@ -87,6 +87,21 @@ namespace ASP_Server.Controllers
             if (user == null) return NotFound();
 
             user.Theme = model.Theme;
+            
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+        
+        [HttpPatch("mode")]
+        [Authorize]
+        public async Task<IActionResult> UpdateMode([FromBody] UpdateModeDto model)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.Users.FindAsync(userId);
+            
+            if (user == null) return NotFound();
+
+            user.Mode = model.Mode;
             
             await _context.SaveChangesAsync();
             return Ok();
@@ -157,6 +172,7 @@ namespace ASP_Server.Controllers
                 orbColor1 = user.OrbColor1,
                 orbColor2 = user.OrbColor2,
                 theme = user.Theme,
+                mode = user.Mode,
             });
         }
         
@@ -172,6 +188,22 @@ namespace ASP_Server.Controllers
                 email = user.Email, 
                 exchangePublicKey = user.ExchangePublicKey
             });
+        }
+
+        [HttpDelete("me")] 
+        [Authorize]
+        public async Task<IActionResult> DeleteUser()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized("Не удалось определить пользователя");
+            
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound("Пользователь не найден");
+            
+            var result = await _userManager.DeleteAsync(user);
+
+            if (result.Succeeded) return Ok(new {message = "Пользователь удалён"});
+            return BadRequest(result.Errors);
         }
 
         private string GenerateJwtToken(ApplicationUser user)
@@ -223,6 +255,7 @@ namespace ASP_Server.Controllers
         public string SignSalt { get; set; }
         
         public ApplicationTheme  Theme { get; set; }
+        public PerformanceMode Mode { get; set; }
     }
 
     public class  LoginInfo
@@ -244,5 +277,10 @@ namespace ASP_Server.Controllers
     public class UpdateThemeDto
     {
         public ApplicationTheme Theme { get; set; } = ApplicationTheme.Auto;
+    }
+    
+    public class UpdateModeDto
+    {
+        public PerformanceMode Mode { get; set; } = PerformanceMode.On;
     }
 }

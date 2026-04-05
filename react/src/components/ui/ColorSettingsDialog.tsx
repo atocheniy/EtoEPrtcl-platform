@@ -7,7 +7,11 @@ import { UserService } from '../../services/userService';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
-import { ApplicationTheme } from '../../types/auth';
+import { ApplicationTheme, PerformanceMode } from '../../types/auth';
+import { MotionDialog } from './MotionDialog';
+
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 
 interface ColorSettingsDialogProps {
     open: boolean;
@@ -18,13 +22,14 @@ const DEFAULT_COLOR_1 = 'rgba(99, 102, 241, 0.3)';
 const DEFAULT_COLOR_2 = 'rgba(169, 85, 247, 0.15)';
 
 export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps) => {
-    const { orbColors, setOrbColors, theme, setTheme } = useEncryption();
+    const { orbColors, setOrbColors, theme, currentTheme, setTheme, mode, setMode } = useEncryption();
     const [color1, color2] = orbColors;
 
     const handleApply = async () => {
         try {
             await UserService.updateColors(color1, color2);
             await UserService.updateTheme(theme);
+            await UserService.updateMode(mode);
             onClose();
         } catch (e) {
             console.error("Не удалось сохранить цвета в БД", e);
@@ -40,36 +45,30 @@ export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps)
         }
     };
 
+    const handleModeChange = (
+        _event: React.MouseEvent<HTMLElement>,
+        newMode: PerformanceMode | null,
+    ) => {
+        if (newMode !== null) {
+            setMode(newMode);
+        }
+    };
+
     const handleReset = () => {
         setOrbColors([DEFAULT_COLOR_1, DEFAULT_COLOR_2]);
     };
 
     const handleClear = () => {
-        setOrbColors(['rgba(0,0,0,0)', 'rgba(0,0,0,0)']);
+        setOrbColors(['rgba(126, 126, 126, 0)', 'rgba(126, 126, 126,0)']);
     };
 
     return (
-        <Dialog 
-            open={open} 
-            onClose={onClose} 
-            slotProps={{
-                backdrop: {
-                    sx: {backgroundColor: 'rgba(0, 0, 0, 0)' }
-                }
-            }}
-            PaperProps={{ 
-                sx: { 
-                    bgcolor: 'rgba(12, 12, 12, 0.7) !important', 
-                    background: 'rgba(27, 27, 27, 0.7) !important',
-                    backdropFilter: 'blur(12px) !important', 
-                    border: '1px solid rgba(255, 255, 255, 0.1) !important', 
-                    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5) !important', 
-                    borderRadius: '20px !important',
-                    color: 'white !important',
-                    minWidth: '500px'
-                } 
-            }}
-        >
+        <MotionDialog 
+                              open={open} 
+                              onClose={onClose}
+                              maxWidth="sm"
+                          >  
+        
             <DialogTitle sx={{ fontWeight: 800, textAlign: 'center', pt: 3 }}>
                Настройка цвета
             </DialogTitle>
@@ -77,7 +76,7 @@ export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps)
             <DialogContent>
                 <Stack spacing={4} sx={{ mt: 1 }}>
                     
-                    {/* СЕКЦИЯ ТЕМЫ */}
+
                     <Box>
                         <Typography variant="subtitle2" sx={{ mb: 2, opacity: 0.6, fontWeight: 700, textAlign: 'center' }}>
                             Цветовой режим
@@ -88,12 +87,10 @@ export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps)
                                 exclusive
                                 onChange={handleThemeChange}
                                 sx={{
-                                    bgcolor: 'rgba(0,0,0,0.2)',
                                     borderRadius: '12px',
                                     p: 0.5,
                                     border: '1px solid rgba(255,255,255,0.05)',
                                     '& .MuiToggleButton-root': {
-                                        color: 'rgba(255,255,255,0.5)',
                                         border: 'none',
                                         borderRadius: '10px !important',
                                         px: 3,
@@ -103,9 +100,6 @@ export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps)
                                         fontWeight: 600,
                                         transition: '0.2s',
                                         '&.Mui-selected': {
-                                            bgcolor: 'rgba(255,255,255,0.1)',
-                                            color: 'white',
-                                            '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }
                                         }
                                     }
                                 }}
@@ -124,8 +118,51 @@ export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps)
                     </Box>
 
                     <Divider sx={{ borderColor: 'rgba(255,255,255,0.05)' }} />
+                    
+                    <Box>
+                        <Typography variant="subtitle2" sx={{ mb: 2, opacity: 0.6, fontWeight: 700, textAlign: 'center' }}>
+                            Размытие элементов и улучшенные анимации
+                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <ToggleButtonGroup
+                                value={mode}
+                                exclusive
+                                onChange={handleModeChange}
+                                sx={{
+                                   
+                                    borderRadius: '12px',
+                                    p: 0.5,
+                                    border: '1px solid rgba(255,255,255,0.05)',
+                                    '& .MuiToggleButton-root': {
+                                        
+                                        border: 'none',
+                                        borderRadius: '10px !important',
+                                        px: 3,
+                                        mx: 0.5,
+                                        gap: 1,
+                                        textTransform: 'none',
+                                        fontWeight: 600,
+                                        transition: '0.2s',
+                                        '&.Mui-selected': {
+                                            
+                                            
+                                           
+                                        }
+                                    }
+                                }}
+                            >
+                                <ToggleButton value={PerformanceMode.Off}>
+                                    <AddIcon fontSize="small" /> Включить
+                                </ToggleButton>
+                                <ToggleButton value={PerformanceMode.On}>
+                                    <RemoveIcon fontSize="small" /> Выключить
+                                </ToggleButton>
+                            </ToggleButtonGroup>
+                        </Box>
+                    </Box>
 
-                    {/* СЕКЦИЯ ЦВЕТНЫХ ПЯТЕН */}
+                    <Divider sx={{ borderColor: 'rgba(255,255,255,0.05)' }} />
+
                     <Box>
                         <Typography variant="subtitle2" sx={{ mb: 3, opacity: 0.6, fontWeight: 700, textAlign: 'center' }}>
                             Фоновые акценты
@@ -172,6 +209,6 @@ export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps)
                     Применить
                 </Button>
             </DialogActions>
-        </Dialog>
+        </MotionDialog>
     );
 };

@@ -27,6 +27,9 @@ public class Project
     
     public bool IsPublic { get; set; } = false;
     
+    public string? PublicEncryptedKey { get; set; } 
+    public string? PublicKeyIv { get; set; }
+    
     [Required]
     public ProjectPriority Priority { get; set; } = ProjectPriority.Low;
     

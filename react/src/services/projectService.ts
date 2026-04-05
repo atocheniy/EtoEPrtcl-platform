@@ -12,7 +12,7 @@ export const ProjectService = {
         return response.data;
     },
 
-    async updateProject(projectData: {id: string, name: string, iv: string, isPublic: boolean, priority: ProjectPriority, status: ProjectStatus}) {
+    async updateProject(projectData: {id: string, name: string, iv: string, isPublic: boolean, priority: ProjectPriority, status: ProjectStatus, publicEncryptedKey?: string, publicKeyIv?: string}) {
         const response = await $api.put(`/projects/${projectData.id}`, projectData);
         return response.data;
     },

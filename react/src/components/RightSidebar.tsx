@@ -23,15 +23,18 @@ import TitleIcon from '@mui/icons-material/Title';
 import LanguageIcon from '@mui/icons-material/Language'; 
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
+import HistoryIcon from '@mui/icons-material/History';
+
 import {
   ListItem,
   ListItemButton,
   ListItemText,
   Box,
 } from '@mui/material';
-import type { FileItem } from '../types/auth';
+import { ApplicationTheme, type FileItem } from '../types/auth';
 import { useEncryption } from './context/EncryptionContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import $api from '../api/axios';
 
 interface RightSidebarProps {
   content: string;
@@ -39,13 +42,30 @@ interface RightSidebarProps {
   links: string[];       
   allFiles: FileItem[];  
   onFileSelect: (id: string) => void;
+  activeFileId?: string | null;
+  handleRestore: (rev: any) => void;
 }
 
-function RightSidebar({ content, tags, links, allFiles, onFileSelect }: RightSidebarProps) {
+export interface RightSidebarHandle {
+    refreshHistory: () => Promise<void>;
+}
+
+const  RightSidebar = React.forwardRef<RightSidebarHandle, RightSidebarProps>((props, ref) => {
+    const { content, tags, links, allFiles, onFileSelect, activeFileId, handleRestore } = props;
   // const [selectedIndex, setSelectedIndex] = useState(0);
 
 const [alignment, setAlignment] = React.useState<string | null>('left');
+const { currentTheme } = useEncryption();
+const [history, setHistory] = useState<any[]>([]);
 
+const loadHistory = async () => {
+    const data = await $api.get(`/files/${activeFileId}/history`);
+    setHistory(data.data);
+};
+
+React.useImperativeHandle(ref, () => ({
+        refreshHistory: loadHistory
+}));
 
 const { currentProjectId, projectData } = useEncryption();
 
@@ -104,6 +124,14 @@ const { currentProjectId, projectData } = useEncryption();
 
   const [openShareDialog, setOpenShareDialog] = useState(false);
 
+  React.useEffect(() => {
+    if (activeFileId) {
+        loadHistory();
+    } else {
+        setHistory([]);
+    }
+}, [activeFileId]);
+
   return (
      <Box sx={{ 
         width: 220, 
@@ -117,12 +145,13 @@ const { currentProjectId, projectData } = useEncryption();
     }}>
     <Paper
       elevation={1}
+      variant='solid'
       sx={{
         flex: 1,  
         borderRadius: 3,       
         height: 'calc(100vh - 16px)', 
         
-        bgcolor: 'rgb(8, 8, 8)',
+        transition: 'background-color 0.3s ease',
         overflow: 'hidden',     
         display: 'flex',
         flexDirection: 'column',
@@ -134,30 +163,56 @@ const { currentProjectId, projectData } = useEncryption();
       }}
     >
 
-      <ToggleButtonGroup
-  sx={{ m: 2, justifyContent: 'center' }}
-  value={alignment}
-  exclusive
-  onChange={handleAlignment}
-  aria-label="text alignment"
-  size='small'
-  
->
-  <ToggleButton value="left" aria-label="left aligned">
-    <FormatAlignLeftIcon />
-  </ToggleButton>
-  <ToggleButton value="center" aria-label="centered">
-    <FormatAlignCenterIcon />
-  </ToggleButton>
-  <ToggleButton value="right" aria-label="right aligned">
-    <FormatAlignRightIcon />
-  </ToggleButton>
-  <ToggleButton value="justify" aria-label="justified" disabled>
-    <FormatAlignJustifyIcon />
-  </ToggleButton>
-</ToggleButtonGroup>
+    <Box sx={{ p: 2, pb: 1 }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+            <HistoryIcon sx={{ fontSize: 18, opacity: 0.5 }} />
+            <Typography variant='caption' sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, opacity: 0.7 }}>
+                История версий
+            </Typography>
+        </Stack>
 
-      <Divider sx={{ opacity: 0.1 }} />
+        <Box sx={{ 
+            maxHeight: '180px', 
+            overflowY: 'auto', 
+            pr: 0.5,
+            '&::-webkit-scrollbar': { width: '3px' },
+            '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.05)', borderRadius: '10px' }
+        }}>
+          <List disablePadding dense>
+            {history.length > 0 ? history.map((rev) => (
+              <ListItemButton 
+                key={rev.id} 
+                onClick={() => handleRestore(rev)}
+                sx={{ 
+                    py: 0.5,
+                    px: 1, 
+                    borderRadius: 1.5,
+                    mb: 0.5,
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
+                }}
+              >
+                <ListItemText 
+                  primary={new Date(rev.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} 
+                  secondary={rev.userEmail}
+                  primaryTypographyProps={{ 
+                      fontSize: '0.72rem', 
+                      fontWeight: 500 
+                  }}
+                  secondaryTypographyProps={{ 
+                      fontSize: '0.62rem', 
+                      noWrap: true 
+                  }}
+                />
+              </ListItemButton>
+            )) : (
+              <Typography variant="caption" sx={{ display: 'block', mt: 1, opacity: 0.3, fontSize: '0.7rem', pl: 1 }}>
+                  Версии не найдены
+              </Typography>
+            )}
+          </List>
+        </Box>
+      </Box>
+<Divider sx={{ opacity: 0.1 }} />
 
       <Box sx={{ p: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
@@ -183,7 +238,6 @@ const { currentProjectId, projectData } = useEncryption();
                 primaryTypographyProps={{ 
                     fontSize: '0.8rem', 
                     noWrap: true, 
-                    color: 'rgba(255,255,255,0.7)',
                     fontWeight: h.level === 1 ? 700 : 400 
                 }} 
               />
@@ -300,8 +354,7 @@ const { currentProjectId, projectData } = useEncryption();
         sx={{
           p: 1.5,
           borderRadius: 3,
-          bgcolor: 'rgb(8, 8, 8)',
-          backdropFilter: 'blur(10px)',
+          bgcolor: currentTheme === ApplicationTheme.Dark ? 'rgb(8, 8, 8)' : 'rgb(245, 245, 245)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           display: 'flex',
           justifyContent: 'center'
@@ -314,7 +367,7 @@ const { currentProjectId, projectData } = useEncryption();
           onClick={() => setOpenShareDialog(true)}
           sx={{
             bgcolor: 'rgba(255, 255, 255, 0.1)',
-            color: '#ffffff',
+            color: currentTheme === ApplicationTheme.Dark ? '#ffffff' : '#000000',
             borderRadius: '10px',
             py: 1,
             textTransform: 'none',
@@ -345,6 +398,6 @@ const { currentProjectId, projectData } = useEncryption();
     
     </Box>
   );
-}
+});
 
 export default RightSidebar

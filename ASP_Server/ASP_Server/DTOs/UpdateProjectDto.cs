@@ -9,4 +9,7 @@ public class UpdateProjectDto
     public ProjectPriority Priority { get; set; } = ProjectPriority.Low;
     public ProjectStatus Status { get; set; } = ProjectStatus.Active;
     public string Iv { get; set; } = string.Empty;
+    
+    public string? PublicEncryptedKey { get; set; } 
+    public string? PublicKeyIv { get; set; }
 }

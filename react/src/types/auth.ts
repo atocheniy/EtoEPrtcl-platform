@@ -18,6 +18,7 @@ export interface RegisterInfo {
 
     signSalt: string;
     theme: ApplicationTheme;
+    mode: PerformanceMode;
 }
 
 export interface AuthResponse {
@@ -40,6 +41,7 @@ export interface User{
     orbColor1: string;  
     orbColor2: string;  
     theme: ApplicationTheme;
+    mode: PerformanceMode;
 }
 
 export const ApplicationTheme = {
@@ -48,6 +50,13 @@ export const ApplicationTheme = {
     Auto: 'Auto'
 } as const;
 export type ApplicationTheme = typeof ApplicationTheme[keyof typeof ApplicationTheme];
+
+export const PerformanceMode = {
+    On: 'On',
+    Off: 'Off',
+    Auto: 'Auto'
+} as const;
+export type PerformanceMode = typeof PerformanceMode[keyof typeof PerformanceMode];
 
 export interface UpdateName {
     newName: string;
@@ -85,6 +94,8 @@ export interface Project {
     encryptedProjectKey: string;
     keyIv: string;
     role: string;
+    publicEncryptedKey?: string;
+    publicKeyIv?: string;
 }
 
 export const ProjectPriority = {

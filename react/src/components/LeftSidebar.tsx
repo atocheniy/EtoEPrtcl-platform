@@ -9,7 +9,7 @@ import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
 import { DCrypto } from '../services/cryptoService.ts';
 import { useEncryption } from './context/EncryptionContext.tsx';
 import { SidebarWrapper } from './SidebarWrapper.tsx';
-import { listVariants, type FileItem } from '../types/auth.ts';
+import { ApplicationTheme, listVariants, PerformanceMode, type FileItem } from '../types/auth.ts';
 import $api from '../api/axios.ts';
 import { MotionDialog } from './ui/MotionDialog.tsx';
 
@@ -31,7 +31,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
   const handleCloseDialog = () => {setOpenDialog(false);};
   const [searchField, setSearchField] = useState("");
 
-  const { masterKey, projects, refreshProjects } = useEncryption();
+  const { masterKey, projects, refreshProjects, currentTheme } = useEncryption();
   // const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
   // const [projectIdSelected, setProjectIdSelected] = 
   const [allFilesForGraph, setAllFilesForGraph] = useState<FileItem[]>([]);
@@ -180,7 +180,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
                           onProjectSelect(project.id);
                           setSelectedId(project.id);
                       }}
-                      sx={{ borderRadius: 3, pl: 1,'&.Mui-selected': {bgcolor: 'primary.light', color: 'primary.contrastText','&:hover': { bgcolor: 'white',}, '& .MuiListItemIcon-root': { color: 'inherit',}},
+                      sx={{ borderRadius: 3, pl: 1,'&.Mui-selected': {bgcolor: 'primary.light', color: 'primary.contrastText','&:hover': { bgcolor: currentTheme === ApplicationTheme.Dark ? 'white' : 'gray',}, '& .MuiListItemIcon-root': { color: 'inherit',}},
                       }}
                     >
                       <ListItemIcon sx={{ minWidth: 35 }}>
@@ -204,7 +204,12 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
               </List> 
             } 
             topAction={
-               <TextField onChange={changeSearchField} value={searchField} sx={{'& .MuiInputBase-input': { color: 'white' }, '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' }, '& .MuiInputLabel-root.Mui-focused': { color: '#fff' }, '& .MuiOutlinedInput-root': { borderRadius: '15px', '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' }, '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' }, '&.Mui-focused fieldset': { borderColor: 'white' }, }, }} id="outlined-basic" label="Поиск..." variant="outlined" />
+               <TextField 
+               onChange={changeSearchField} 
+               value={searchField} 
+               id="outlined-basic" 
+               label="Поиск..." 
+               variant="outlined" />
             } 
             bottomAction={
               <Button variant="contained" fullWidth startIcon={<CreateIcon />} onClick={handleClickOpenDialog} sx={{...whiteSolidButton, p:1.5}}>
@@ -212,10 +217,9 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
               </Button>
             }
             customsx={{
-                bgcolor: 'rgba(10, 10, 10, 0.9)',
-                backdropFilter: "blur(20px) saturate(150%)",
-                boxShadow: "0 8px 22px rgba(0,0,0,0.3)",
+
             }}
+            variant="SidebarBlur"
             >
           </SidebarWrapper>
           <MotionDialog 
@@ -229,7 +233,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
     Новый проект
   </DialogTitle>
         <DialogContent>
-             <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+             <DialogContentText sx={{ mb: 2 }}>
       Введите название для вашего нового проекта. Вы сможете изменить настройки позже.
     </DialogContentText>
           <form onSubmit={handleSubmit} id="subscription-form">
@@ -241,9 +245,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
         label="Название проекта"
         type="text"
         fullWidth
-        variant="outlined" 
-        sx={{'& .MuiInputBase-input': { color: 'white' }, '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.5)' }, '& .MuiInputLabel-root.Mui-focused': { color: '#fff' }, '& .MuiOutlinedInput-root': { borderRadius: '15px','& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },'&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },'&.Mui-focused fieldset': { borderColor: 'white' }, },}}
-      />
+       color='secondary'     />
           </form>
         </DialogContent>
         <DialogActions>

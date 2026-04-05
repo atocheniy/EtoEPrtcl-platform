@@ -1,7 +1,10 @@
 import React from 'react';
-import { Dialog, Paper, Box } from '@mui/material';
+import { Dialog, Paper, Box, Zoom } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { DialogProps } from '@mui/material/Dialog';
+import { useEncryption } from '../context/EncryptionContext';
+import { ApplicationTheme, PerformanceMode } from '../../types/auth';
+import type { TransitionProps } from '@mui/material/transitions';
 
 const dialogVariants = {
   initial: { opacity: 0, scale: 0.9, y: 15, filter: 'blur(10px)' },
@@ -25,6 +28,7 @@ interface MotionDialogProps extends Omit<DialogProps, 'open'> {
 
 const MotionBackdrop = React.forwardRef<HTMLDivElement, any>((props, ref) => {
     const { open, ...other } = props;
+    const {mode, currentTheme } = useEncryption();
     return (
         <motion.div
             ref={ref}
@@ -35,9 +39,10 @@ const MotionBackdrop = React.forwardRef<HTMLDivElement, any>((props, ref) => {
             style={{
                 position: 'fixed',
                 inset: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
+                backgroundColor: currentTheme === ApplicationTheme.Dark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                backdropFilter: mode === PerformanceMode.Off ? 'blur(4px)' : undefined,
+                WebkitBackdropFilter: mode === PerformanceMode.Off ? 'blur(4px)' : undefined,
+                transition: 'background-color 0.3s ease',
                 zIndex: -1,
             }}
             {...other}
@@ -47,6 +52,8 @@ const MotionBackdrop = React.forwardRef<HTMLDivElement, any>((props, ref) => {
 
 
 export const MotionDialog = ({ open, onClose, children, ...props }: MotionDialogProps) => {
+  const { mode } = useEncryption();
+  const effectsEnabled = mode === PerformanceMode.Off;
   return (
     <AnimatePresence>
       {open && (
@@ -54,25 +61,23 @@ export const MotionDialog = ({ open, onClose, children, ...props }: MotionDialog
           {...props}
           open={true}
           onClose={onClose}
-          transitionDuration={0}
+          TransitionComponent={!effectsEnabled ? undefined : undefined}
+          transitionDuration={!effectsEnabled ? 225 : 0}
           slots={{
             backdrop: MotionBackdrop
           }}
           slotProps={{
             
             paper: {
-              component: MotionPaper,
-              initial: "initial",
-              animate: "animate",
-              exit: "exit",
-              variants: dialogVariants,
+              variant: 'DialogBlur',
+              component: effectsEnabled ? MotionPaper : Paper,
+              ...(effectsEnabled ? {
+                initial: "initial",
+                animate: "animate",
+                exit: "exit",
+                variants: dialogVariants
+              } : {}),
               sx: {
-                borderRadius: '24px',
-                bgcolor: 'rgba(20, 20, 20, 0.5)',
-                backdropFilter: 'blur(20px) saturate(160%)',
-                backgroundImage: 'none',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 24px 50px rgba(0,0,0,0.5)',
                 ...props.PaperProps?.sx,
               }
             } as any

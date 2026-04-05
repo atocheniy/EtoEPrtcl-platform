@@ -14,6 +14,13 @@ public enum ApplicationTheme
     Auto
 }
 
+public enum PerformanceMode
+{
+    On,
+    Off,
+    Auto
+}
+
 public class ApplicationUser : IdentityUser
 {
     public string? FullName { get; set; }
@@ -34,8 +41,11 @@ public class ApplicationUser : IdentityUser
     
     [Required]
     public ApplicationTheme Theme { get; set; } = ApplicationTheme.Auto;
+
+    [Required] 
+    public PerformanceMode Mode { get; set; } = PerformanceMode.On;
     
-    public string? OrbColor1 { get; set; } = "rgba(0, 0, 0, 0)";
-    public string? OrbColor2 { get; set; } = "rgba(0, 0, 0, 0)";
+    public string? OrbColor1 { get; set; } = "rgba(125, 125, 125, 0)";
+    public string? OrbColor2 { get; set; } = "rgba(125, 125, 125, 0)";
 }
 
