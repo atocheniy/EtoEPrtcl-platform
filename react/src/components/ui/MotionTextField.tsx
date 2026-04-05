@@ -68,7 +68,7 @@ export const MotionTextField = ({
     };
 
     return (
-        <>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
             <TextField
                 {...props}
                 select={false}
@@ -121,6 +121,6 @@ export const MotionTextField = ({
                     } as any);
                 })}
             </MotionMenu>
-        </>
+        </div>
     );
 };

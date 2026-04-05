@@ -128,7 +128,7 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
             <DialogContent sx={{ px: 4, pb: 4 }}>
                 
                 {amIOwner && (
-                <>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ mb: 4, mt: 1 }}>
                     <Typography variant="caption" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
                         ДОСТУП ПО ССЫЛКЕ
@@ -209,7 +209,7 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                         </Button>
                     </Stack>
                 </Box>
-                </>
+                </div>
                 )}
 
                 <Box>
@@ -231,6 +231,7 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
                                 <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                                     <Typography 
                                         variant="body2" 
+                                        component="span" 
                                         noWrap
                                         sx={{ fontWeight: member.isMe ? 700 : 500 }}
                                         >

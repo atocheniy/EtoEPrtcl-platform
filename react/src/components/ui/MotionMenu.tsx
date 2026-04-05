@@ -31,7 +31,7 @@ const menuAnimation = {
   }
 };
 
-const MotionPaper = motion(Paper);
+const MotionPaper = motion.create(Paper);
 
 interface MotionMenuProps extends Omit<MenuProps, 'open'> {
   open: boolean;

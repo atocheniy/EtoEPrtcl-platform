@@ -17,7 +17,7 @@ const dialogVariants = {
   }
 };
 
-const MotionPaper = motion(Paper);
+const MotionPaper = motion.create(Paper);
 
 interface MotionDialogProps extends Omit<DialogProps, 'open'> {
   open: boolean;

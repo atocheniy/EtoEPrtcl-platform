@@ -436,7 +436,7 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, currentTheme === Applicat
     const showGlow = !activeFileId && !isProjectSettinsOpen;
 
   return (
-    <>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         <Paper
         elevation={0}
         sx={{
@@ -747,7 +747,7 @@ const primaryGlow = orbColors[0].replace(/[\d.]+\)$/g, currentTheme === Applicat
          </AnimatePresence>
         </Paper>
 
-    </>
+    </div>
   )
 }), (prevProps, nextProps) => {
     return (

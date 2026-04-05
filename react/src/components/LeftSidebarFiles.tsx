@@ -381,7 +381,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
   }, [projectFiles]);
 
   return (
-    <>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
     <SidebarWrapper
      projectIdSelected={projectIdSelected}
      isProjectSettinsOpen={isProjectSettinsOpen} setIsProjectSettinsOpen={setIsProjectSettinsOpen} closeFile={closeFile}
@@ -414,7 +414,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         <List sx={{ px: 2, mt: 1 }}>
         <AnimatePresence mode="popLayout">
         {searchField ? (
-           <>
+           <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         {fileTree.map((item, index) => (
             <FileTreeItem 
                 key={item.id}
@@ -436,8 +436,8 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
             Ничего не найдено
           </Typography>
         )}
-        </>) : (
-          <>
+        </div>) : (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
           {fileTree.map((item, index) => (
             <FileTreeItem 
                 key={item.id}
@@ -459,13 +459,13 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
             Ничего не найдено
           </Typography>
         )}
-        </>
+        </div>
         )}
         </AnimatePresence>
       </List>
      }
      bottomAction={
-       <>
+       <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
       <Button
           variant="contained" 
           fullWidth           
@@ -492,10 +492,10 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
                 <Typography variant="body2">Папка</Typography>
             </MenuItem>
         </MotionMenu>
-        </>
+        </div>
      }
      secondBottomAction={
-     <>
+     <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         <Button
             fullWidth           
             startIcon={<CloudDownloadIcon />} 
@@ -512,7 +512,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
               onChange={handleFileUpload}
               accept=".md,.txt,.js,.ts,image/*"
           />
-        </>
+        </div>
       }
       files={projectFiles}
       onFileSelect={onFileSelect}
@@ -740,7 +740,7 @@ const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
             </Button>
         </DialogActions>
     </MotionDialog>
-      </>
+      </div>
   );
 }
 

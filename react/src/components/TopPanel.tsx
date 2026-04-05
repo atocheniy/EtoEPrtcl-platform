@@ -47,7 +47,7 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
   };
 
   return (
-    <>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
     <Paper
       elevation={1}
       variant='blur'
@@ -119,7 +119,7 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
             }}>
                <CloseIcon sx={{ fontSize: 16 }}></CloseIcon>
             </IconButton>
-          </Tooltip>) : (<></>)
+          </Tooltip>) : (<div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}></div>)
       }
           </Box>
      <Box sx={{ position: 'absolute', right: 16, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -134,7 +134,7 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
           <SaveIcon /> 
       </IconButton>
     </Tooltip>
-    ) : (<></>)}
+    ) : (<div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}></div>)}
     {activeFileId ? (
      <Tooltip title={`Сменить режим на ${selected ? 'редактирование' : 'чтение'}`}>
         <ToggleButton
@@ -153,7 +153,7 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
         {selected ? <VisibilityIcon /> : <CreateIcon />} 
     </ToggleButton>
     </Tooltip>
-      ) : (<></>)}
+      ) : (<div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}></div>)}
 
     <Tooltip title={isRightOpen ? "Скрыть панель" : "Показать панель"}>
             <IconButton 
@@ -169,7 +169,7 @@ function TopPanel({ selected, onToggle, fileName, onSave, isLeftOpen, onLeftTogg
          </Tooltip>
          </Box>
     </Paper>
-    </>
+    </div>
   )
 }
 

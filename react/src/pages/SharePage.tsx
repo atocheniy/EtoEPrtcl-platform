@@ -12,7 +12,7 @@ import { $api } from '../api/axios';
 import { motion } from 'framer-motion';
 import RightSidebar from '../components/RightSidebar';
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 export default function SharePage() {
     const { projectId } = useParams();

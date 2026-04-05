@@ -73,7 +73,7 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
     };
     
     return (
-        <>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
        <Dialog fullScreen open={showGraph} onClose={() => setShowGraph(false)}
          slotProps={{
                 backdrop: {
@@ -204,11 +204,11 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
             {secondBottomAction ? (
                 <Box sx={{ p: 2, pt: 0.5 }}>
                     {secondBottomAction}
-                </Box>) : <></>
+                </Box>) : <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}></div>
             }
 
             <UserSection />
         </Paper>
-        </>
+        </div>
     );
 };

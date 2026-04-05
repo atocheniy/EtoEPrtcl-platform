@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useEncryption } from './context/EncryptionContext';
 
-const MotionBox = motion(Box);
+const MotionBox = motion.create(Box);
 
 export const FileTreeItem = ({ item, level, selectedId, onFileSelect, expanded, onToggle, onMenuOpen, getIcon, masterKey, orbColors, index }: any) => {
     const isFolder = item.isFolder;
@@ -16,7 +16,7 @@ export const FileTreeItem = ({ item, level, selectedId, onFileSelect, expanded, 
     const getAccentColor = (alpha: string) => orbColors[1].replace(/[\d.]+\)$/g, `${alpha})`);
 
     return (
-        <>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         <MotionBox sx={{ 
             border: isFolder && isOpen ? `1px solid ${getAccentColor('0.2')}` : '1px solid transparent',
             bgcolor: isFolder && isOpen ? getAccentColor('0.03') : 'transparent',
@@ -114,6 +114,6 @@ export const FileTreeItem = ({ item, level, selectedId, onFileSelect, expanded, 
                 </Collapse>
             )}
             </MotionBox>
-        </>
+        </div>
     );
 };

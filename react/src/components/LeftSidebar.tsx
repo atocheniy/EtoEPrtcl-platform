@@ -15,8 +15,6 @@ import { MotionDialog } from './ui/MotionDialog.tsx';
 
 const MotionPaper = motion.div;
 
-
-
 interface LeftSidebarProps {
     isOpen: boolean;
     onProjectSelect: (id: string) => void;

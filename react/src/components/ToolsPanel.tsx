@@ -77,7 +77,7 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
     };
     
   return (
-    <>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
         <Paper
         elevation={1}
         variant='blur'
@@ -170,7 +170,7 @@ function ToolsPanel({ onCommand }: ToolsPanelProps) {
             </IconButton>
         </Tooltip>
         </Paper>
-    </>
+    </div>
   )
 }
 

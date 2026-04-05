@@ -30,7 +30,7 @@ export const UserSection = () => {
     };    
 
     return (
-        <>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
              <Box
                 onClick={handleOpen}
                 sx={{
@@ -112,6 +112,6 @@ export const UserSection = () => {
             </List>
        </MotionMenu>
         <ColorSettingsDialog open={openColorDialog} onClose={() => setOpenColorDialog(false)} />
-        </>
+        </div>
     );
 };

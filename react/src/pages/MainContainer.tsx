@@ -30,7 +30,7 @@ import { useEncryption } from '../components/context/EncryptionContext.tsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Box } from '@mui/material';
 
-    const MotionBox = motion(Box);
+    const MotionBox = motion.create(Box);
 
 //* =============================================================================
 //* Main container application
