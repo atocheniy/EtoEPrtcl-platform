@@ -1,17 +1,15 @@
 import {useState, useMemo} from'react';
-import {List,ListItem,ListItemButton,ListItemIcon,ListItemText, TextField, Button,DialogActions,DialogContent,DialogContentText,DialogTitle, Typography} from '@mui/material';
+import {List,ListItem,ListItemButton,ListItemIcon,ListItemText, TextField, Button, Typography} from '@mui/material';
 
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CreateIcon from '@mui/icons-material/Create';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ProjectService } from '../../services/projectService.ts';
-import {whiteSolidButton, whiteOutlinedButton} from '../css/sx.tsx'
-import { DCrypto } from '../../services/cryptoService.ts';
+import {whiteSolidButton} from '../css/sx.tsx'
 import { useApplication } from '../context/ApplicationContext.tsx';
 import { SidebarWrapper } from '../layout/SidebarWrapper.tsx';
 import { ApplicationTheme, listVariants, type FileItem } from '../../types/auth.ts';
-import $api from '../../api/axios.ts';
-import { MotionDialog } from '../motion/MotionDialog.tsx';
+import { useLoadGraph } from '../../hooks/useLoadGraph.ts';
+import CreateProjectDialog from './dialogs/CreateProjectDialog.tsx';
 
 const MotionPaper = motion.div;
 
@@ -23,119 +21,14 @@ interface LeftSidebarProps {
 }
 
 function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSidebarProps) {
-
+  const { LoadGlobalGraph } = useLoadGraph(); 
   const [openDialog, setOpenDialog] = useState(false);
   const handleClickOpenDialog = () => {setOpenDialog(true);};
   const handleCloseDialog = () => {setOpenDialog(false);};
   const [searchField, setSearchField] = useState("");
-
-  const { masterKey, projects, refreshProjects, currentTheme } = useApplication();
-  // const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
-  // const [projectIdSelected, setProjectIdSelected] = 
+  const { projects, currentTheme } = useApplication();
   const [allFilesForGraph, setAllFilesForGraph] = useState<FileItem[]>([]);
-  // const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  /*
-  useEffect(() => {
-    if (masterKey) {
-        ProjectService.getProjects().then( async data => {
-                        const decryptedProjects = await Promise.all(data.map(async (p: any) => {
-                try {
-                    const clearName = await DCrypto.decrypt(p.name, p.iv, masterKey);
-                    return { ...p, name: clearName };
-                } catch (e) {
-                    return { ...p, name: "Ошибка расшифровки" };
-                }
-            }));
-            setProjects(decryptedProjects); 
-        }).catch(err => console.error(err));
-    }
-  }, [masterKey]);
-  */
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const projectName = formData.get('projectName') as string;
-
-        if (!projectName || !masterKey) return;
-
-        try {
-            const projectKey = await DCrypto.generateProjectKey();
-            const rawProjectKey = await DCrypto.exportProjectKey(projectKey);
-
-            const encryptedName = await DCrypto.encrypt(projectName, projectKey);
-
-            // const encrypted = await DCrypto.encrypt(projectName, masterKey);
-
-            const wrappedKey = await DCrypto.encrypt(rawProjectKey, masterKey);
-
-            const newProject = await ProjectService.createProject({
-                name: encryptedName.content,  
-                iv: encryptedName.iv, 
-                encryptedProjectKey: wrappedKey.content,
-                projectKeyIv: wrappedKey.iv
-            });
-            
-            //setProjects(prev => [...prev, { ...newProject, name: projectName }]);
-            await refreshProjects(); 
-            onProjectSelect(newProject.id); 
-            handleCloseDialog();
-        } catch (error) {
-            console.error(error);
-        }
-  };
-
-  const loadGlobalGraph = async () => {
-    if (!masterKey || projects.length === 0) return;
-    
-    try {
-      const projectKeyring = new Map<string, CryptoKey>();
-      await Promise.all(projects.map(async (p: any) => {
-            try {
-                const rawKeyBase64 = await DCrypto.decrypt(p.encryptedProjectKey, p.keyIv, masterKey);
-                const pKey = await DCrypto.importProjectKey(rawKeyBase64);
-                projectKeyring.set(p.id, pKey);
-            } catch (e) {
-                console.warn(`Не удалось подготовить ключ для проекта ${p.name}`);
-            }
-        }));
-
-      const response = await $api.get<any[]>('/files/all');
-      
-      const decryptedFiles = await Promise.all(response.data.map(async f => {
-        try {
-           const pKey = projectKeyring.get(f.projectId);
-           if (!pKey) {
-              const legacyName = await DCrypto.decrypt(f.name, f.iv, masterKey);
-              return { ...f, name: legacyName + " (Legacy)" };
-           }
-           const name = await DCrypto.decrypt(f.name, f.iv, pKey);
-             const rawTags = f.tags || f.Tags || [];
-                const decryptedTags = await Promise.all(rawTags.map(async (t: any) => {
-                    try {
-                        const dName = await DCrypto.decrypt(t.encryptedName || t.EncryptedName, t.iv || t.Iv, pKey);
-                        return { ...t, decryptedName: dName };
-                    } catch { return null; }
-                }));
-
-           return { 
-                    ...f, 
-                    name, 
-                    links: f.links || [], 
-                    tags: decryptedTags.filter(t => t !== null) 
-                };
-        } catch {
-          return { ...f, name: "Ошибка" };
-        }
-      }));
-      
-      setAllFilesForGraph(decryptedFiles);
-    } catch (e) {
-      console.error("Ошибка загрузки глобального графа", e);
-    }
-  };
 
   const changeSearchField = (event: any) => {
     setSearchField(event.target.value);
@@ -164,7 +57,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
                 zIndex: 20,
             }}
         >
-          <SidebarWrapper classnames="leftSidebarOverlay" title={"Проекты"} files={allFilesForGraph} onFileSelect={onFileSelect} projects={projects} onOpenGraph={loadGlobalGraph} closeFile={closeFile}
+          <SidebarWrapper classnames="leftSidebarOverlay" title={"Проекты"} files={allFilesForGraph} onFileSelect={onFileSelect} projects={projects} onOpenGraph={() => LoadGlobalGraph({ setAllFilesForGraph })} closeFile={closeFile}
           highAction
             children={
               <List sx={{px: 2, mt: 1 }}>
@@ -219,57 +112,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
             variant="SidebarBlur"
             >
           </SidebarWrapper>
-          <MotionDialog 
-                      open={openDialog} 
-                      onClose={handleCloseDialog}
-                      maxWidth="sm"
-                      fullWidth
-                  >  
-          
-          <DialogTitle sx={{ fontWeight: 600, fontSize: '1.2rem' }}>
-    Новый проект
-  </DialogTitle>
-        <DialogContent>
-             <DialogContentText sx={{ mb: 2 }}>
-      Введите название для вашего нового проекта. Вы сможете изменить настройки позже.
-    </DialogContentText>
-          <form onSubmit={handleSubmit} id="subscription-form">
-            <TextField
-        autoFocus
-        margin="dense"
-        id="name"
-        name="projectName"
-        label="Название проекта"
-        type="text"
-        fullWidth
-       color='secondary'     />
-          </form>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-      onClick={handleCloseDialog}
-      variant="outlined"
-      sx={{ 
-        ...whiteOutlinedButton,
-         m: 1,
-        px: 3
-      }}
-    >Отмена
-    </Button>
-          <Button 
-      type="submit" 
-      form="subscription-form"
-      variant="contained"
-      sx={{
-    ...whiteSolidButton,
-    m: 1,
-    px: 3
-}}
-    >
-      Создать
-    </Button>
-        </DialogActions>
-      </MotionDialog>
+          <CreateProjectDialog handleCloseDialog={handleCloseDialog} onProjectSelect={onProjectSelect} openDialog={openDialog} />
     </MotionPaper>
   );
 }
