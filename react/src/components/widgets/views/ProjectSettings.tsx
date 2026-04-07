@@ -8,11 +8,11 @@ import SaveIcon from '@mui/icons-material/Save';
 import LockIcon from '@mui/icons-material/Lock';
 import PublicIcon from '@mui/icons-material/Public';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { whiteSolidButton } from './css/sx';
+import { whiteSolidButton } from '../../css/sx';
 
-import { ApplicationTheme, ProjectPriority, ProjectStatus } from "../types/auth";
-import { MotionTextField } from './ui/MotionTextField';
-import { useEncryption } from './context/EncryptionContext';
+import { ApplicationTheme, ProjectPriority, ProjectStatus } from "../../../types/auth";
+import { MotionTextField } from '../../motion/MotionTextField';
+import { useApplication } from '../../context/ApplicationContext';
 
 interface ProjectSettingsProps {
     projectData: { id: string; name: string; iv: string, isPublic: boolean, priority: ProjectPriority, status: ProjectStatus };
@@ -35,7 +35,7 @@ const ProjectSettings: React.FC<ProjectSettingsProps> = ({ projectData, onSave, 
     const [priority, setPriority] = useState<ProjectPriority>(projectData.priority);
     const [status, setStatus] = useState<ProjectStatus>(projectData.status);
 
-    const { currentTheme } = useEncryption();
+    const { currentTheme } = useApplication();
 
     useEffect(() => {
         console.log(projectData.name)

@@ -2,16 +2,16 @@ import { useState} from 'react';
 import type {MouseEvent } from 'react';
 import { Box, Avatar, Typography, List, ListItemButton, ListItemText } from '@mui/material';
 import { useNavigate } from 'react-router';
-import { useEncryption } from './context/EncryptionContext';
-import { ColorSettingsDialog } from './ui/ColorSettingsDialog';
-import { ApplicationTheme } from '../types/auth';
-import { MotionMenu } from './ui/MotionMenu';
+import { useApplication } from '../context/ApplicationContext';
+import { ColorSettingsDialog } from '../widgets/dialogs/ColorSettingsDialog';
+import { ApplicationTheme } from '../../types/auth';
+import { MotionMenu } from '../motion/MotionMenu';
 
 export const UserSection = () => {
 
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const open = Boolean(anchorEl);
-    const { userData, logout, currentTheme } = useEncryption(); 
+    const { userData, logout, currentTheme } = useApplication(); 
     const navigate = useNavigate();
 
     const [openColorDialog, setOpenColorDialog] = useState(false);

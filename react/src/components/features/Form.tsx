@@ -8,11 +8,11 @@ import {
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 
-import { AuthService } from '../services/authService';
+import { AuthService } from '../../services/authService.ts';
 
 import { useNavigate } from 'react-router';
-import { useEncryption } from './context/EncryptionContext.tsx';
-import { ApplicationTheme, PerformanceMode } from '../types/auth.ts';
+import { useApplication } from '../context/ApplicationContext.tsx';
+import { ApplicationTheme, PerformanceMode } from '../../types/auth.ts';
 
 function Form() {
     const navigate = useNavigate();
@@ -20,8 +20,8 @@ function Form() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { initKeysForLogin } = useEncryption();
-    const { mode, currentTheme } = useEncryption();
+    const { initKeysForLogin } = useApplication();
+    const { mode, currentTheme } = useApplication();
 
     const handleLogin = async () => {
         try {

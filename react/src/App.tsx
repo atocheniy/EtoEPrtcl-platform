@@ -9,11 +9,11 @@ import SharePage from './pages/SharePage';
 import { AnimatePresence } from 'framer-motion';
 
 import { BrowserRouter as Router, Routes, Route, useLocation  } from 'react-router-dom';
-import { RequireAuth } from './components/RequireAuth';
-import { RequireUnAuth } from './components/RequireUnAuth';
-import { EncryptionProvider } from './components/context/EncryptionContext'
+import { RequireAuth } from './components/auth/RequireAuth';
+import { RequireUnAuth } from './components/auth/RequireUnAuth';
+import { ApplicationProvider } from './components/context/ApplicationContext'
 import { AppThemeWrapper } from './components/context/AppThemeWrapper'
-import { NotificationProvider } from './components/NotificationContext'
+import { NotificationProvider } from './components/context/NotificationContext'
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -53,13 +53,13 @@ function App() {
   return (
     <>
       <NotificationProvider>
-        <EncryptionProvider>
+        <ApplicationProvider>
             <AppThemeWrapper>
                 <Router>
                     <AnimatedRoutes />
                 </Router>
             </AppThemeWrapper>
-        </EncryptionProvider>
+        </ApplicationProvider>
       </NotificationProvider>
     </>
   )

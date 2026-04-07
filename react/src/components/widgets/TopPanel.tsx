@@ -17,7 +17,7 @@ import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useNotification } from './NotificationContext';
+import { useNotification } from '../context/NotificationContext';
 
 interface TopPanelProps {
     selected: boolean;

@@ -8,15 +8,15 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import { whiteSolidButton, whiteOutlinedButton } from './css/sx';
+import { whiteSolidButton, whiteOutlinedButton } from '../../css/sx';
 
-import { useEncryption } from './context/EncryptionContext';
-import { DCrypto } from '../services/cryptoService';
-import { UserService } from '../services/userService';
-import { ProjectService } from '../services/projectService';
-import { MotionDialog } from './ui/MotionDialog';
+import { useApplication } from '../../context/ApplicationContext';
+import { DCrypto } from '../../../services/cryptoService';
+import { UserService } from '../../../services/userService';
+import { ProjectService } from '../../../services/projectService';
+import { MotionDialog } from '../../motion/MotionDialog';
 import { motion } from 'framer-motion';
-import { MotionTextField } from './ui/MotionTextField';
+import { MotionTextField } from '../../motion/MotionTextField';
 
 interface ShareProjectDialogProps {
     open: boolean;
@@ -25,7 +25,7 @@ interface ShareProjectDialogProps {
 }
 
 export default function ShareProjectDialog({ open, onClose, projectData }: ShareProjectDialogProps) {
-     const { currentProjectKey } = useEncryption();
+     const { currentProjectKey } = useApplication();
      const [inviteEmail, setInviteEmail] = useState("");
      const [inviteRole, setInviteRole] = useState("viewer");
      const [members, setMembers] = useState<any[]>([]);

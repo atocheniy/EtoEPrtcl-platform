@@ -1,7 +1,7 @@
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { useMemo } from 'react';
-import { useEncryption } from './EncryptionContext';
+import { useApplication } from './ApplicationContext';
 import { PerformanceMode } from '../../types/auth';
 
 declare module '@mui/material/Paper' {
@@ -29,7 +29,7 @@ declare module '@mui/material/TextField' {
 }
 
 export const AppThemeWrapper = ({ children }: { children: React.ReactNode }) => {
-    const { isDarkMode, mode } = useEncryption();
+    const { isDarkMode, mode } = useApplication();
 
     const theme = useMemo(() => createTheme({
         palette: {

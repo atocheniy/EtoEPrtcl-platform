@@ -3,7 +3,7 @@ import ForceGraph2D, { type GraphData, type NodeObject } from 'react-force-graph
 import { Box, Checkbox, Divider, FormControlLabel, Paper, Slider, Stack, Typography } from '@mui/material';
 
 import * as d3 from 'd3-force';
-import { useEncryption } from '../context/EncryptionContext';
+import { useApplication } from '../context/ApplicationContext';
 import { ApplicationTheme, PerformanceMode } from '../../types/auth';
 
 interface GraphNode extends NodeObject {
@@ -40,8 +40,8 @@ const GraphView: React.FC<GraphViewProps> = ({ files, projects, onNodeClick }) =
   const [showTags, setShowTags] = useState(true); 
   const [showLinks, setShowLinks] = useState(true);
 
-  const { orbColors } = useEncryption();
-  const { mode, currentTheme } = useEncryption();
+  const { orbColors } = useApplication();
+  const { mode, currentTheme } = useApplication();
 
   const fgRef = useRef<any>(null); 
 

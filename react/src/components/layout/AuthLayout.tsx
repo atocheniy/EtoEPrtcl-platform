@@ -1,6 +1,6 @@
 import { Paper, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router';
-import { useEncryption } from '../context/EncryptionContext';
+import { useApplication } from '../context/ApplicationContext';
 import { ApplicationTheme } from '../../types/auth';
 
 interface AuthLayoutProps {
@@ -12,7 +12,7 @@ interface AuthLayoutProps {
 
 const AuthLayout = ({ text, buttonLabel, navigateTo }: AuthLayoutProps) => {
     const navigate = useNavigate();
-    const { currentTheme } = useEncryption();
+    const { currentTheme } = useApplication();
     return (
         <Paper
             elevation={0}

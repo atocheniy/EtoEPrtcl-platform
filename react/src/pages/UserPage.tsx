@@ -15,8 +15,8 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router';
 
-import AnimatedPage from '../components/AnimatedPage';
-import { useEncryption } from '../components/context/EncryptionContext';
+import AnimatedPage from '../components/motion/AnimatedPage';
+import { useApplication } from '../components/context/ApplicationContext';
 import { textFieldStyle, whiteSolidButton } from '../components/css/sx';
 import { UserService } from '../services/userService';
 import { ApplicationTheme } from '../types/auth';
@@ -26,16 +26,16 @@ type EditMode = 'name' | 'email' | 'password' | null;
 function UserPage() {
   const navigate = useNavigate();
 
-  const { userData } = useEncryption();
+  const { userData } = useApplication();
   const [loading, setLoading] = useState(false);
 
   const [editMode, setEditMode] = useState<EditMode>(null);
   const [inputValue, setInputValue] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const { orbColors, currentTheme } = useEncryption();
+  const { orbColors, currentTheme } = useApplication();
 
-  const { refreshUserData } = useEncryption();
+  const { refreshUserData } = useApplication();
 
   const handleOpenEdit = (mode: EditMode, currentVal: string = '') => {
     setEditMode(mode);

@@ -4,14 +4,14 @@ import {List,ListItem,ListItemButton,ListItemIcon,ListItemText, TextField, Butto
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import CreateIcon from '@mui/icons-material/Create';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ProjectService } from '../services/projectService';
-import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
-import { DCrypto } from '../services/cryptoService.ts';
-import { useEncryption } from './context/EncryptionContext.tsx';
-import { SidebarWrapper } from './SidebarWrapper.tsx';
-import { ApplicationTheme, listVariants, type FileItem } from '../types/auth.ts';
-import $api from '../api/axios.ts';
-import { MotionDialog } from './ui/MotionDialog.tsx';
+import { ProjectService } from '../../services/projectService.ts';
+import {whiteSolidButton, whiteOutlinedButton} from '../css/sx.tsx'
+import { DCrypto } from '../../services/cryptoService.ts';
+import { useApplication } from '../context/ApplicationContext.tsx';
+import { SidebarWrapper } from '../layout/SidebarWrapper.tsx';
+import { ApplicationTheme, listVariants, type FileItem } from '../../types/auth.ts';
+import $api from '../../api/axios.ts';
+import { MotionDialog } from '../motion/MotionDialog.tsx';
 
 const MotionPaper = motion.div;
 
@@ -29,7 +29,7 @@ function LeftSidebar({ isOpen, onProjectSelect, onFileSelect, closeFile}: LeftSi
   const handleCloseDialog = () => {setOpenDialog(false);};
   const [searchField, setSearchField] = useState("");
 
-  const { masterKey, projects, refreshProjects, currentTheme } = useEncryption();
+  const { masterKey, projects, refreshProjects, currentTheme } = useApplication();
   // const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
   // const [projectIdSelected, setProjectIdSelected] = 
   const [allFilesForGraph, setAllFilesForGraph] = useState<FileItem[]>([]);

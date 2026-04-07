@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, Paper } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { DialogProps } from '@mui/material/Dialog';
-import { useEncryption } from '../context/EncryptionContext';
+import { useApplication } from '../context/ApplicationContext';
 import { ApplicationTheme, PerformanceMode } from '../../types/auth';
 
 const dialogVariants = {
@@ -27,7 +27,7 @@ interface MotionDialogProps extends Omit<DialogProps, 'open'> {
 
 const MotionBackdrop = React.forwardRef<HTMLDivElement, any>((props, ref) => {
     const { open, ...other } = props;
-    const {mode, currentTheme } = useEncryption();
+    const {mode, currentTheme } = useApplication();
     return (
         <motion.div
             ref={ref}
@@ -51,7 +51,7 @@ const MotionBackdrop = React.forwardRef<HTMLDivElement, any>((props, ref) => {
 
 
 export const MotionDialog = ({ open, onClose, children, ...props }: MotionDialogProps) => {
-  const { mode } = useEncryption();
+  const { mode } = useApplication();
   const effectsEnabled = mode === PerformanceMode.Off;
   return (
     <AnimatePresence>

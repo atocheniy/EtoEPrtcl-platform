@@ -1,7 +1,7 @@
 import { Menu, Paper } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import type {MenuProps} from '@mui/material/Menu';
-import { useEncryption } from '../context/EncryptionContext';
+import { useApplication } from '../context/ApplicationContext';
 import { PerformanceMode } from '../../types/auth';
 
 const menuAnimation = {
@@ -38,7 +38,7 @@ interface MotionMenuProps extends Omit<MenuProps, 'open'> {
 }
 
 export const MotionMenu = ({ open, anchorEl, onClose, children, sx, ...props }: MotionMenuProps) => {
-  const { mode } = useEncryption();
+  const { mode } = useApplication();
   const effectsEnabled = mode === PerformanceMode.Off;
   return (
     <AnimatePresence>

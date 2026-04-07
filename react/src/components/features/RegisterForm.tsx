@@ -8,11 +8,11 @@ import {
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 
-import { AuthService } from '../services/authService';
+import { AuthService } from '../../services/authService';
 
 import { useNavigate } from 'react-router';
-import { useEncryption } from './context/EncryptionContext';
-import { ApplicationTheme, PerformanceMode } from '../types/auth';
+import { useApplication } from '../context/ApplicationContext';
+import { ApplicationTheme, PerformanceMode } from '../../types/auth';
 
 function RegisterForm() {
     const navigate = useNavigate();
@@ -23,9 +23,9 @@ function RegisterForm() {
     const [confirmPass, setConfirmPass] = useState('');
     const [error, setError] = useState('');
 
-     const { currentTheme } = useEncryption();
+     const { currentTheme } = useApplication();
 
-    const { initKeysForRegister } = useEncryption();
+    const { initKeysForRegister } = useApplication();
     
     const handleRegister = async () => {
         setError('');

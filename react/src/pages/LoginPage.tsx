@@ -1,8 +1,8 @@
 import '../components/css/MainContainer.css'
-import AuthHeader from '../components/auth/AuthLayout.tsx';
-import Form from '../components/Form.tsx';
+import AuthHeader from '../components/layout/AuthLayout.tsx';
+import Form from '../components/features/Form.tsx';
 
-import AnimatedPage from '../components/AnimatedPage'; 
+import AnimatedPage from '../components/motion/AnimatedPage.tsx'; 
 
 function LoginPage() {
   return (

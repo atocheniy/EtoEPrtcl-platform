@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react'; 
-import { useEncryption } from './context/EncryptionContext';
-import { ApplicationTheme } from '../types/auth';
+import { useApplication } from '../context/ApplicationContext';
+import { ApplicationTheme } from '../../types/auth';
 
 const pageVariants = {
     initial: {
@@ -33,7 +33,7 @@ interface AnimatedPageProps {
 }
 
 const AnimatedPage = ({ children }: AnimatedPageProps) => {
-    const { currentTheme } = useEncryption();
+    const { currentTheme } = useApplication();
     return (
         <motion.div
             variants={pageVariants}

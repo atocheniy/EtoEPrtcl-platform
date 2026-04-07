@@ -2,13 +2,13 @@ import { useState, useRef, useEffect, useTransition } from 'react'
 
 //? Components -------------------------------------
 
-import LeftSidebar from '../components/LeftSidebar.tsx';
-import LeftSidebarFiles from '../components/LeftSidebarFiles.tsx';
-import ContentPanel, { type ContentPanelHandle } from '../components/ContentPanel.tsx';
-import RightSidebar, { type RightSidebarHandle } from '../components/RightSidebar.tsx';
+import LeftSidebar from '../components/widgets/LeftSidebar.tsx';
+import LeftSidebarFiles from '../components/widgets/LeftSidebarFiles.tsx';
+import ContentPanel, { type ContentPanelHandle } from '../components/widgets/ContentPanel.tsx';
+import RightSidebar, { type RightSidebarHandle } from '../components/widgets/RightSidebar.tsx';
 import '../components/css/MainContainer.css'
-import TopPanel from '../components/TopPanel.tsx';
-import ToolsPanel, { type MarkdownCommand } from '../components/ToolsPanel.tsx';
+import TopPanel from '../components/widgets/TopPanel.tsx';
+import ToolsPanel, { type MarkdownCommand } from '../components/widgets/ToolsPanel.tsx';
 
 //? Functions -------------------------------------
 
@@ -22,10 +22,10 @@ import { TagsService } from '../services/tagsService.ts';
 
 //? Animations -------------------------------------
 
-import AnimatedPage from '../components/AnimatedPage'; 
+import AnimatedPage from '../components/motion/AnimatedPage.tsx'; 
 // import { motion } from 'framer-motion';
 import { DCrypto } from '../services/cryptoService.ts';
-import { useEncryption } from '../components/context/EncryptionContext.tsx';
+import { useApplication } from '../components/context/ApplicationContext.tsx';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { Box } from '@mui/material';
@@ -49,7 +49,7 @@ function MainContainer() {
     // const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
     const [isProjectSidebarOpen, setIsProjectSidebarOpen] = useState(true);
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-    const { masterKey, setMasterKey } = useEncryption(); 
+    const { masterKey, setMasterKey } = useApplication(); 
     const [isPending, startTransition] = useTransition();
     const [manualLoading, setManualLoading] = useState(false);
     const [isFileLoading, setIsFileLoading] = useState(false);
@@ -61,14 +61,14 @@ function MainContainer() {
 
     const showSkeleton = (isPending || manualLoading || isFileLoading) && (isPreviewMode || isWorkingWithPreview);
 
-    const { currentProjectKey } = useEncryption();
-    const { userData } = useEncryption();
-    const { signingKey, setSigningKey } = useEncryption();
-     const { orbColors, refreshCurrentProjectId } = useEncryption();
-     const { clearCurrentProjectId } = useEncryption();
-     const { projectFiles, setProjectFiles } = useEncryption();
+    const { currentProjectKey } = useApplication();
+    const { userData } = useApplication();
+    const { signingKey, setSigningKey } = useApplication();
+     const { orbColors, refreshCurrentProjectId } = useApplication();
+     const { clearCurrentProjectId } = useApplication();
+     const { projectFiles, setProjectFiles } = useApplication();
 
-    const { projectData } = useEncryption();
+    const { projectData } = useApplication();
     const canEdit = projectData.role === 'Owner' || projectData.role === 'Editor';
 
     //! === Refs ===

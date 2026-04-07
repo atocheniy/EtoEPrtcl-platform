@@ -3,14 +3,14 @@ import { useEffect, useState, useRef, useTransition } from 'react';
 import { DCrypto } from '../services/cryptoService';
 import { ProjectService } from '../services/projectService';
 import { Box } from '@mui/material';
-import { useEncryption } from '../components/context/EncryptionContext';
-import LeftSidebarFiles from '../components/LeftSidebarFiles';
-import ContentPanel from '../components/ContentPanel';
-import TopPanel from '../components/TopPanel';
-import AnimatedPage from '../components/AnimatedPage';
+import { useApplication } from '../components/context/ApplicationContext';
+import LeftSidebarFiles from '../components/widgets/LeftSidebarFiles';
+import ContentPanel from '../components/widgets/ContentPanel';
+import TopPanel from '../components/widgets/TopPanel';
+import AnimatedPage from '../components/motion/AnimatedPage';
 import { $api } from '../api/axios'; 
 import { motion } from 'framer-motion';
-import RightSidebar from '../components/RightSidebar';
+import RightSidebar from '../components/widgets/RightSidebar';
 
 const MotionBox = motion.create(Box);
 
@@ -23,7 +23,7 @@ export default function SharePage() {
         currentProjectKey,
         projectFiles,
         refreshCurrentProjectId
-    } = useEncryption();
+    } = useApplication();
 
      const [fileContent, setFileContent] = useState("");
     const [fileName, setFileName] = useState("");
@@ -35,7 +35,7 @@ export default function SharePage() {
     const [isPending, startTransition] = useTransition();
     const [isFileLoading, setIsFileLoading] = useState(false);
 
-    const { orbColors } = useEncryption();
+    const { orbColors } = useApplication();
 
     const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);

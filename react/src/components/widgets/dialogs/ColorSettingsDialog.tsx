@@ -1,14 +1,14 @@
 import { DialogTitle, DialogContent, DialogActions, Stack, Button, Typography, Box } from '@mui/material';
 import { RgbaStringColorPicker } from 'react-colorful';
-import { useEncryption } from '../context/EncryptionContext';
+import { useApplication } from '../../context/ApplicationContext';
 import { ToggleButtonGroup, ToggleButton, Divider } from '@mui/material'; 
-import { whiteOutlinedButton, whiteSolidButton } from '../css/sx';
-import { UserService } from '../../services/userService';
+import { whiteOutlinedButton, whiteSolidButton } from '../../css/sx';
+import { UserService } from '../../../services/userService';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
-import { ApplicationTheme, PerformanceMode } from '../../types/auth';
-import { MotionDialog } from './MotionDialog';
+import { ApplicationTheme, PerformanceMode } from '../../../types/auth';
+import { MotionDialog } from '../../motion/MotionDialog';
 
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -22,7 +22,7 @@ const DEFAULT_COLOR_1 = 'rgba(99, 102, 241, 0.3)';
 const DEFAULT_COLOR_2 = 'rgba(169, 85, 247, 0.15)';
 
 export const ColorSettingsDialog = ({ open, onClose }: ColorSettingsDialogProps) => {
-    const { orbColors, setOrbColors, theme, setTheme, mode, setMode } = useEncryption();
+    const { orbColors, setOrbColors, theme, setTheme, mode, setMode } = useApplication();
     const [color1, color2] = orbColors;
 
     const handleApply = async () => {

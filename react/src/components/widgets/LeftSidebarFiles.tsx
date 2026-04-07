@@ -13,25 +13,25 @@ import { AnimatePresence } from 'framer-motion';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-import {whiteSolidButton, whiteOutlinedButton} from './css/sx.tsx'
-import { $api } from '../api/axios';
-import { DCrypto } from '../services/cryptoService.ts';
-import { useEncryption } from './context/EncryptionContext.tsx';
-import { SidebarWrapper } from './SidebarWrapper.tsx';
-import { ApplicationTheme, type FileItem } from '../types/auth.ts';
+import {whiteSolidButton, whiteOutlinedButton} from '../css/sx.tsx'
+import { $api } from '../../api/axios.ts';
+import { DCrypto } from '../../services/cryptoService.ts';
+import { useApplication } from '../context/ApplicationContext.tsx';
+import { SidebarWrapper } from '../layout/SidebarWrapper.tsx';
+import { ApplicationTheme, type FileItem } from '../../types/auth.ts';
 
 import CreateNewFolderIcon from '@mui/icons-material/ArrowDownward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import MenuItem from '@mui/material/MenuItem';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { FileService } from '../services/fileService.ts';
+import { FileService } from '../../services/fileService.ts';
 
 import FolderIcon from '@mui/icons-material/Folder';
-import { FileTreeItem } from './FileTreeItem.tsx';
-import { MotionMenu } from './ui/MotionMenu.tsx';
-import { MotionDialog } from './ui/MotionDialog.tsx';
-import { MotionTextField } from './ui/MotionTextField.tsx';
+import { FileTreeItem } from '../layout/FileTreeItem.tsx';
+import { MotionMenu } from '../motion/MotionMenu.tsx';
+import { MotionDialog } from '../motion/MotionDialog.tsx';
+import { MotionTextField } from '../motion/MotionTextField.tsx';
 
 const buildFileTree = (items: FileItem[]) => {
     const map = new Map<string, any>();
@@ -74,7 +74,7 @@ interface LeftSidebarFilesProps {
 
 function LeftSidebarFiles({ projectId, onBack, onFileSelect, projectIdSelected, isProjectSettinsOpen, setIsProjectSettinsOpen, closeFile, onRenameSuccess }: LeftSidebarFilesProps) {
 
-  const { masterKey, projectData, projectFiles, setProjectFiles } = useEncryption();
+  const { masterKey, projectData, projectFiles, setProjectFiles } = useApplication();
   // const [files, setFiles] = useState<FileItem[]>([]);
   // const [projectName, setProjectName] = useState<string>('Загрузка...'); 
   const [openDialog, setOpenDialog] = useState(false);
@@ -89,9 +89,9 @@ function LeftSidebarFiles({ projectId, onBack, onFileSelect, projectIdSelected, 
 
   const [openRenameDialog, setOpenRenameDialog] = useState(false);
   const [newFileName, setNewFileName] = useState("");
-  const { orbColors } = useEncryption();
-  const { currentTheme } = useEncryption();
-  const { currentProjectKey, clearCurrentProjectId } = useEncryption();
+  const { orbColors } = useApplication();
+  const { currentTheme } = useApplication();
+  const { currentProjectKey, clearCurrentProjectId } = useApplication();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

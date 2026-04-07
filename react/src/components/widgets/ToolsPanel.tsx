@@ -15,8 +15,8 @@ import ImageIcon from '@mui/icons-material/Image';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import BackupTableIcon from '@mui/icons-material/BackupTable';
 import AlignHorizontalLeftIcon from '@mui/icons-material/AlignHorizontalLeft';
-import { useEncryption } from './context/EncryptionContext';
-import { ApplicationTheme, PerformanceMode } from '../types/auth';
+import { useApplication } from '../context/ApplicationContext';
+import { ApplicationTheme, PerformanceMode } from '../../types/auth';
 
 export type MarkdownCommand = 'H' | 'bold' | 'italic' | 'code' | 'quote' | 'ul' | 'ol' | 'link' | 'image' | 'todo' | 'table';
 
@@ -26,7 +26,7 @@ interface ToolsPanelProps {
 
 function ToolsPanel({ onCommand }: ToolsPanelProps) {
 
-    const { mode, currentTheme } = useEncryption();
+    const { mode, currentTheme } = useApplication();
 
   const buttonStyle = {
         color: currentTheme === ApplicationTheme.Dark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',

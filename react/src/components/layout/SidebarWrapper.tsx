@@ -2,16 +2,16 @@ import { Paper, Divider, Typography, Box, type SxProps, Dialog, IconButton, Menu
 import { UserSection } from './UserSection';
 
 import CloseIcon from '@mui/icons-material/Close';
-import GraphView from './ui/GraphView';
+import GraphView from '../special components/GraphView';
 import { useState } from 'react';
-import { ApplicationTheme, PerformanceMode, type FileItem } from '../types/auth';
+import { ApplicationTheme, PerformanceMode, type FileItem } from '../../types/auth';
 
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SettingsApplicationsIcon from '@mui/icons-material/SettingsApplications';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEncryption } from './context/EncryptionContext';
-import { MotionMenu } from './ui/MotionMenu';
+import { useApplication } from '../context/ApplicationContext';
+import { MotionMenu } from '../motion/MotionMenu';
 
 interface SidebarWrapperProps {
     classnames?: string;
@@ -40,8 +40,8 @@ export const SidebarWrapper = ({ classnames, title, highAction, children, topAct
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const openMenu = Boolean(anchorEl);
 
-    const { orbColors } = useEncryption();
-    const { mode, currentTheme } = useEncryption();
+    const { orbColors } = useApplication();
+    const { mode, currentTheme } = useApplication();
 
     const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);

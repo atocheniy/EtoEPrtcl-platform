@@ -1,17 +1,17 @@
 import { Box, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import Collapse from '@mui/material/Collapse';
-import { ApplicationTheme, listVariants } from '../types/auth';
+import { ApplicationTheme, listVariants } from '../../types/auth';
 import FolderIcon from '@mui/icons-material/Folder';
 import { motion } from 'framer-motion';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import { useEncryption } from './context/EncryptionContext';
+import { useApplication } from '../context/ApplicationContext';
 
 const MotionBox = motion.create(Box);
 
 export const FileTreeItem = ({ item, level, selectedId, onFileSelect, expanded, onToggle, onMenuOpen, getIcon, masterKey, orbColors, index }: any) => {
     const isFolder = item.isFolder;
     const isOpen = expanded.includes(item.id);
-    const { currentTheme } = useEncryption();
+    const { currentTheme } = useApplication();
 
     const getAccentColor = (alpha: string) => orbColors[1].replace(/[\d.]+\)$/g, `${alpha})`);
 

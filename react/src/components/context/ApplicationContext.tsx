@@ -16,7 +16,7 @@ interface InitKeysResult {
     salt: string;
 }
 
-interface EncryptionContextType {
+interface ApplicationContextType {
     masterKey: CryptoKey | null;
     signingKey: CryptoKey | null;
     exchangeKey: CryptoKey | null;
@@ -63,9 +63,9 @@ interface EncryptionContextType {
     logout: () => void;
 }
 
-const EncryptionContext = createContext<EncryptionContextType | null>(null);
+const ApplicationContext = createContext<ApplicationContextType | null>(null);
 
-export const EncryptionProvider = ({ children }: { children: React.ReactNode }) => {
+export const ApplicationProvider = ({ children }: { children: React.ReactNode }) => {
     const [masterKey, setMasterKey] = useState<CryptoKey | null>(null);
     const [signingKey, setSigningKey] = useState<CryptoKey | null>(null);
     const [exchangeKey, setExchangeKey] = useState<CryptoKey | null>(null);
@@ -361,14 +361,14 @@ export const EncryptionProvider = ({ children }: { children: React.ReactNode }) 
     };
 
     return (
-        <EncryptionContext.Provider value={{ masterKey, signingKey, exchangeKey, currentProjectKey, userData, setCurrentProjectKey, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, currentTheme, setCurrentTheme, mode, setMode, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, setProjectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
+        <ApplicationContext.Provider value={{ masterKey, signingKey, exchangeKey, currentProjectKey, userData, setCurrentProjectKey, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, currentTheme, setCurrentTheme, mode, setMode, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, setProjectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
             {children}
-        </EncryptionContext.Provider>
+        </ApplicationContext.Provider>
     );
 };
 
-export const useEncryption = () => {
-    const context = useContext(EncryptionContext);
-    if (!context) throw new Error("useEncryption must be used within EncryptionProvider");
+export const useApplication = () => {
+    const context = useContext(ApplicationContext);
+    if (!context) throw new Error("useApplication must be used within ApplicationProvider");
     return context;
 };

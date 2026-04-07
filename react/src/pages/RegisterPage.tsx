@@ -1,8 +1,8 @@
 import '../components/css/MainContainer.css'
-import RegisterForm from '../components/RegisterForm.tsx';
-import AnimatedPage from '../components/AnimatedPage'; 
+import RegisterForm from '../components/features/RegisterForm.tsx';
+import AnimatedPage from '../components/motion/AnimatedPage.tsx'; 
 
-import AuthHeader from '../components/auth/AuthLayout.tsx';
+import AuthHeader from '../components/layout/AuthLayout.tsx';
 
 function RegisterPage() {
   return (

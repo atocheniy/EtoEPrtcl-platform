@@ -18,7 +18,7 @@ import 'katex/dist/katex.css';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css'; 
 
-import './css/EditorStyles.css';
+import '../css/EditorStyles.css';
 
 import remarkGemoji from 'remark-gemoji';
 
@@ -41,11 +41,11 @@ import type { MarkdownCommand } from './ToolsPanel';
 import { memo } from 'react';
 
 import { githubLight } from '@uiw/codemirror-theme-github';
-import { useEncryption } from './context/EncryptionContext';
-import ProjectSettings from './ProjectSettings';
-import { ProjectService } from '../services/projectService';
-import { DCrypto } from '../services/cryptoService';
-import { ApplicationTheme, PerformanceMode, type Project } from '../types/auth';
+import { useApplication } from '../context/ApplicationContext';
+import ProjectSettings from './views/ProjectSettings';
+import { ProjectService } from '../../services/projectService';
+import { DCrypto } from '../../services/cryptoService';
+import { ApplicationTheme, PerformanceMode, type Project } from '../../types/auth';
 import LinkIcon from '@mui/icons-material/Link';
 
 import type { Variants } from 'framer-motion';
@@ -136,10 +136,10 @@ const ContentPanel = memo(forwardRef<ContentPanelHandle, ContentPanelProps>((pro
    const editorWrapperRef = useRef<HTMLDivElement>(null);
    const editorRef = useRef<any>(null);
    const [fontSize, setFontSize] = useState(16);
-   const { projectData, masterKey, orbColors, refreshProjects, refreshProjectData, projectFiles } = useEncryption();
+   const { projectData, masterKey, orbColors, refreshProjects, refreshProjectData, projectFiles } = useApplication();
 
-   const { currentProjectKey } = useEncryption();
-    const { mode, currentTheme } = useEncryption();
+   const { currentProjectKey } = useApplication();
+    const { mode, currentTheme } = useApplication();
 
     const glowAnimation = `
   @keyframes borderPulse {
