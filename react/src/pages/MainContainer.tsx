@@ -41,7 +41,7 @@ function MainContainer() {
     const [isProjectSidebarOpen, setIsProjectSidebarOpen] = useState(true);
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const { masterKey, setMasterKey } = useApplication(); 
-    const [isPending, startTransition] = useTransition();
+    const [isPending, startTransition] = useTransition(); 
     const [manualLoading, setManualLoading] = useState(false);
     const [isFileLoading, setIsFileLoading] = useState(false);
     const [isWorkingWithPreview, setIsWorkingWithPreview] = useState(false);
