@@ -26,7 +26,6 @@ public class ProjectsController : ControllerBase
 
     [HttpPost]
     [Authorize]
-    [SignatureRequired]
     public async Task<IActionResult> Create([FromBody] CreateProjectDto model)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -74,7 +73,6 @@ public class ProjectsController : ControllerBase
     
     [HttpDelete("{id}")]
     [Authorize]
-    [SignatureRequired]
     public async Task<IActionResult> DeleteProject(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -103,7 +101,6 @@ public class ProjectsController : ControllerBase
     
     [HttpPut("{id}")]
     [Authorize]
-    [SignatureRequired]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProjectDto model)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -140,7 +137,6 @@ public class ProjectsController : ControllerBase
         
     [HttpGet]
     [Authorize]
-    [SignatureRequired]
     public async Task<IActionResult> GetMyProjects()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -209,7 +205,6 @@ public class ProjectsController : ControllerBase
     
     [HttpPost("{projectId}/members")]
     [Authorize]
-    [SignatureRequired]
     public async Task<IActionResult> AddMember(Guid projectId, [FromBody] AddMemberDto model)
     {
         var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);

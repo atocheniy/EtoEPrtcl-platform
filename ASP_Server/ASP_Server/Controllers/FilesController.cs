@@ -21,7 +21,6 @@ public class FilesController : ControllerBase
     
     [HttpPost]
     [Authorize]
-    [SignatureRequired]
     public async Task<IActionResult> Create([FromBody] CreateFileDto model)
     {
         var projectExists = _context.Projects.Any(p => p.Id == model.ProjectId);
@@ -46,7 +45,6 @@ public class FilesController : ControllerBase
     
     [HttpDelete("{id}")]
     [Authorize]
-    [SignatureRequired]
     public async Task<IActionResult> DeleteFile(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -75,7 +73,6 @@ public class FilesController : ControllerBase
     
     [HttpPut("{id}")]
     [Authorize]
-    [SignatureRequired]
     public async Task<IActionResult> UpdateFile(Guid id, [FromBody] UpdateFileDto model)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -190,7 +187,6 @@ public class FilesController : ControllerBase
     
     [HttpGet("all")]
     [Authorize]
-    [SignatureRequired] 
     public async Task<IActionResult> GetAllUserFiles()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

@@ -44,10 +44,6 @@ function RegisterForm() {
 
             await AuthService.register({
                 email, password, fullName,
-                
-                signingPublicKey: keys.publicKey,
-                encryptedSigningPrivateKey: keys.encryptedPrivateKey,
-                signingKeyIv: keys.iv,
 
                 signSalt: keys.salt,
 

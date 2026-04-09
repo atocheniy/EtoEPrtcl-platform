@@ -32,9 +32,10 @@ function ElementContextMenu({ menuFile, selectedId, closeFile, setMenuFile, hand
         if (!menuFile) return;
         if (window.confirm(`Удалить файл ${menuFile.name}?`)) {
             try {
+                if (menuFile.id === selectedId) closeFile();
+                
                 await FileService.deleteFile(menuFile.id)
                 setProjectFiles(prev => prev.filter(f => f.id !== menuFile.id));
-                if (menuFile.id === selectedId) closeFile();
 
                 setMenuFile(null);
                 handleFileMenuClose();

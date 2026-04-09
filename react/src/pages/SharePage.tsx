@@ -120,6 +120,10 @@ export default function SharePage() {
         setActiveFileId(null);
         setFileName('');
         setFileContent('');
+        setCurrentFileTags([]);
+        setCurrentFileLinks([]);
+
+        setIsPreviewMode(false);
     };
 
    return (

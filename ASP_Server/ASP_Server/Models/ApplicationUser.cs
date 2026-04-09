@@ -24,9 +24,6 @@ public enum PerformanceMode
 public class ApplicationUser : IdentityUser
 {
     public string? FullName { get; set; }
-    public string? SigningPublicKey { get; set; } 
-    public string? EncryptedSigningPrivateKey { get; set; }
-    public string? SigningKeyIv { get; set; }
     public string? SignSalt {get; set;}
     
     // Project Key

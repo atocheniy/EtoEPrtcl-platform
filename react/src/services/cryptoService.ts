@@ -102,7 +102,6 @@
             const db = await openDB();
             const tx = db.transaction(STORE_NAME, "readwrite");
             tx.objectStore(STORE_NAME).delete("master_key");
-            tx.objectStore(STORE_NAME).delete("signing_key");
             tx.objectStore(STORE_NAME).delete("exchange_private_key");
             return new Promise((res) => (tx.oncomplete = res));
         },

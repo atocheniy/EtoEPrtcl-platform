@@ -8,10 +8,6 @@ export interface RegisterInfo {
     password: string;
     fullName?: string;
 
-    signingPublicKey: string;
-    encryptedSigningPrivateKey: string; 
-    signingKeyIv: string; 
-
     exchangePublicKey: string;           
     encryptedExchangePrivateKey: string; 
     exchangeKeyIv: string;   
@@ -23,9 +19,6 @@ export interface RegisterInfo {
 
 export interface AuthResponse {
     token: string;
-
-    encryptedSigningPrivateKey: string;
-    signingKeyIv: string;
 
     encryptedExchangePrivateKey: string; 
     exchangeKeyIv: string;

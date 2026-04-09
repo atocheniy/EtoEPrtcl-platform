@@ -51,7 +51,6 @@ function MainContainer() {
     const showSkeleton = (isPending || manualLoading || isFileLoading) && (isPreviewMode || isWorkingWithPreview);
     const { currentProjectKey } = useApplication();
     const { userData } = useApplication();
-    const { signingKey, setSigningKey } = useApplication();
     const { orbColors, refreshCurrentProjectId } = useApplication();
     const { clearCurrentProjectId } = useApplication();
     const { projectFiles, setProjectFiles } = useApplication();
@@ -80,9 +79,7 @@ function MainContainer() {
     const handleCloseProject = () => {
         clearCurrentProjectId();
 
-        setActiveFileId(null);
-        setFileName('');
-        setFileContent('');
+        closeFile();
         activeFileIdRef.current = null;
         contentRef.current = '';
 
@@ -121,13 +118,19 @@ function MainContainer() {
                 linkedFileIds: linkedFileIds
             };
 
+            const plainTags = contentToSave.match(/#\w+/g)?.map(t => t.slice(1)) || [];
+
+            setFileContent(contentToSave);
+            setCurrentFileTags(plainTags);
+            setCurrentFileLinks(linkedFileIds);
+
             lastSavedContentRef.current = contentToSave;
 
-            await $api.put(`/files/${activeFileId}`, payload);
+            await $api.put(`/files/${activeFileId}`, payload);      
             rightSidebarRef.current?.refreshHistory(); 
 
             setProjectFiles(prev => prev.map(f => 
-                f.id === activeFileId ? { ...f, iv: payload.iv, tags, links: linkedFileIds } : f
+                f.id === activeFileId ? { ...f, iv: payload.iv, tags: tags.map((t, i) => ({ ...t, decryptedName: plainTags[i] })), links: linkedFileIds } : f
             ));
             
             console.log("Файл сохранен и подписан цифровым ключом.");
@@ -212,6 +215,8 @@ function MainContainer() {
         setActiveFileId(null);
         setFileName('');
         setFileContent('');
+        setCurrentFileTags([]);
+        setCurrentFileLinks([]);
 
         setIsPreviewMode(false);
         setIsWorkingWithPreview(false);
@@ -228,19 +233,14 @@ function MainContainer() {
 
     useEffect(() => {
         const tryAutoLogin = async () => {
-            if (masterKey && signingKey) return;
+            if (masterKey) return;
 
-            const [savedMaster, savedSigning] = await Promise.all([
+            const [savedMaster] = await Promise.all([
                 DCrypto.loadKeyFromStorage("master_key"),
-                DCrypto.loadKeyFromStorage("signing_key")
             ]);
 
             if (savedMaster) {
                 setMasterKey(savedMaster);
-            }
-            
-            if (savedSigning) {
-                setSigningKey(savedSigning);
             }
         };
         tryAutoLogin();

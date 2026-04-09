@@ -30,7 +30,7 @@ namespace ASP_Server.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterInfo model)
         {
-            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, SigningPublicKey = model.SigningPublicKey, EncryptedSigningPrivateKey = model.EncryptedSigningPrivateKey, SigningKeyIv = model.SigningKeyIv, ExchangePublicKey = model.ExchangePublicKey, EncryptedExchangePrivateKey = model.EncryptedExchangePrivateKey, ExchangeKeyIv = model.ExchangeKeyIv, SignSalt = model.SignSalt, Theme = model.Theme, Mode = model.Mode};
+            var user = new ApplicationUser { UserName = model.Email, Email = model.Email, FullName = model.FullName, ExchangePublicKey = model.ExchangePublicKey, EncryptedExchangePrivateKey = model.EncryptedExchangePrivateKey, ExchangeKeyIv = model.ExchangeKeyIv, SignSalt = model.SignSalt, Theme = model.Theme, Mode = model.Mode};
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (result.Succeeded) return Ok(new { message = "Регистрация успешна" });
@@ -47,9 +47,6 @@ namespace ASP_Server.Controllers
             {
                 return Ok(new { 
                     token = GenerateJwtToken(user),
-                    
-                    encryptedSigningPrivateKey = user.EncryptedSigningPrivateKey,
-                    signingKeyIv = user.SigningKeyIv,
                     
                     encryptedExchangePrivateKey = user.EncryptedExchangePrivateKey,
                     exchangeKeyIv = user.ExchangeKeyIv,
@@ -109,7 +106,6 @@ namespace ASP_Server.Controllers
         
         [HttpPost("change-name")]
         [Authorize]
-        [SignatureRequired]
         public async Task<IActionResult> ChangeName([FromBody] UpdateNameDto model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -127,7 +123,6 @@ namespace ASP_Server.Controllers
 
         [HttpPost("change-email")]
         [Authorize]
-        [SignatureRequired]
         public async Task<IActionResult> ChangeEmail([FromBody] UpdateEmailDto model)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -243,10 +238,6 @@ namespace ASP_Server.Controllers
         public string Email { get; set; }
         public string Password { get; set; }
         public string FullName { get; set; }
-        
-        public string SigningPublicKey { get; set; }
-        public string EncryptedSigningPrivateKey { get; set; }
-        public string SigningKeyIv { get; set; }
         
         public string ExchangePublicKey { get; set; }
         public string EncryptedExchangePrivateKey { get; set; }

@@ -26,14 +26,11 @@ function Form() {
     const handleLogin = async () => {
         try {
             const response = await AuthService.login({ email, password });
-            const { encryptedSigningPrivateKey, signingKeyIv, salt, encryptedExchangePrivateKey, exchangeKeyIv } = response.data;
+            const { salt, encryptedExchangePrivateKey, exchangeKeyIv } = response.data;
 
             await initKeysForLogin(
                 password, 
                 salt,
-                
-                encryptedSigningPrivateKey, 
-                signingKeyIv,
 
                 encryptedExchangePrivateKey,
                 exchangeKeyIv

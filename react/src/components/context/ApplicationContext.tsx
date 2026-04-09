@@ -7,9 +7,6 @@ import $api from '../../api/axios';
 import { useMediaQuery } from '@mui/material';
 
 interface InitKeysResult {
-    publicKey: string;
-    encryptedPrivateKey: string;
-    iv: string;
     exchangePublicKey: string;
     encryptedExchangePrivateKey: string;
     exchangeKeyIv: string;
@@ -18,7 +15,6 @@ interface InitKeysResult {
 
 interface ApplicationContextType {
     masterKey: CryptoKey | null;
-    signingKey: CryptoKey | null;
     exchangeKey: CryptoKey | null;
     currentProjectKey: CryptoKey | null;
     setCurrentProjectKey: React.Dispatch<React.SetStateAction<CryptoKey | null>>;
@@ -37,9 +33,8 @@ interface ApplicationContextType {
     refreshProjectFiles: (projectId: string, pKey: CryptoKey) => Promise<void>;
 
     setMasterKey: React.Dispatch<React.SetStateAction<CryptoKey | null>>;
-    setSigningKey: (key: CryptoKey | null) => void;
-    initKeysForRegister: (password: string) => Promise<{ publicKey: string, encryptedPrivateKey: string, iv: string, salt: string; exchangePublicKey: string, encryptedExchangePrivateKey: string,  exchangeKeyIv: string}>;
-    initKeysForLogin: (password: string, salt: string, encKey: string, iv: string,  encExchangeKey: string, exchangeIv: string) => Promise<void>;
+    initKeysForRegister: (password: string) => Promise<{ salt: string; exchangePublicKey: string, encryptedExchangePrivateKey: string,  exchangeKeyIv: string}>;
+    initKeysForLogin: (password: string, salt: string,  encExchangeKey: string, exchangeIv: string) => Promise<void>;
 
     currentProjectId: string | null;
 
@@ -67,8 +62,6 @@ const ApplicationContext = createContext<ApplicationContextType | null>(null);
 
 export const ApplicationProvider = ({ children }: { children: React.ReactNode }) => {
     const [masterKey, setMasterKey] = useState<CryptoKey | null>(null);
-
-    const [signingKey, setSigningKey] = useState<CryptoKey | null>(null);
 
     const [exchangeKey, setExchangeKey] = useState<CryptoKey | null>(null);
     const [currentProjectKey, setCurrentProjectKey] = useState<CryptoKey | null>(null);
@@ -253,10 +246,10 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
             refreshUserData();
         }
 
-        if (masterKey && signingKey) { 
+        if (masterKey) { 
             refreshProjects();
         }
-    }, [masterKey, signingKey]);
+    }, [masterKey]);
 
     const initKeysForRegister = async (password: string): Promise<InitKeysResult> => {
         const salt = await DCrypto.generateUniqueSalt();
@@ -265,31 +258,19 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
         setMasterKey(mKey);
         await DCrypto.saveKeyToStorage(mKey, "master_key");
 
-        const keyPair = await DCrypto.generateSigningKeyPair();
-        setSigningKey(keyPair.privateKey);
-        await DCrypto.saveKeyToStorage(keyPair.privateKey, "signing_key");
-
-        const packed = await DCrypto.packPrivateKey(keyPair.privateKey, mKey);
-        const pubKey = await DCrypto.exportPublicKey(keyPair.publicKey);
-
         const exchangeKeyPair = await DCrypto.generateExchangeKeyPair();
         await DCrypto.saveKeyToStorage(exchangeKeyPair.privateKey, "exchange_private_key");
         const packedExchange = await DCrypto.packPrivateKey(exchangeKeyPair.privateKey, mKey);
         const pubPackedExchange = await DCrypto.exportPublicKey(exchangeKeyPair.publicKey);
         
-        return { publicKey: pubKey, encryptedPrivateKey: packed.encryptedKey, iv: packed.iv , exchangePublicKey: pubPackedExchange, encryptedExchangePrivateKey: packedExchange.encryptedKey,  exchangeKeyIv: packedExchange.iv, salt: salt};
+        return { exchangePublicKey: pubPackedExchange, encryptedExchangePrivateKey: packedExchange.encryptedKey,  exchangeKeyIv: packedExchange.iv, salt: salt};
     };
 
-    const initKeysForLogin = async (password: string, salt: string, encKey: string, iv: string, encExchangeKey: string, exchangeIv: string) => {
+    const initKeysForLogin = async (password: string, salt: string, encExchangeKey: string, exchangeIv: string) => {
 
         const mKey = await DCrypto.deriveMasterKey(password, salt);
         setMasterKey(mKey);
         await DCrypto.saveKeyToStorage(mKey, "master_key");
-
-        const sKey = await DCrypto.unpackPrivateKey(encKey, iv, mKey, 'signing');
-        setSigningKey(sKey);
-        await DCrypto.saveKeyToStorage(sKey, "signing_key");
-
 
         if (!encExchangeKey || !exchangeIv) {
             console.warn("У пользователя отсутствуют ключи обмена");
@@ -304,7 +285,6 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
 
     const logout = () => {
         setMasterKey(null);
-        setSigningKey(null);
         setExchangeKey(null);
 
         setUserData({ 
@@ -325,7 +305,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
     };
 
     return (
-        <ApplicationContext.Provider value={{ masterKey, signingKey, exchangeKey, currentProjectKey, userData, setCurrentProjectKey, refreshUserData, setMasterKey, setSigningKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, currentTheme, setCurrentTheme, mode, setMode, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, setProjectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
+        <ApplicationContext.Provider value={{ masterKey, exchangeKey, currentProjectKey, userData, setCurrentProjectKey, refreshUserData, setMasterKey, initKeysForRegister, initKeysForLogin, orbColors, setOrbColors, theme, setTheme, currentTheme, setCurrentTheme, mode, setMode, isDarkMode, refreshCurrentProjectId, currentProjectId, projectData, setProjectData, projects, refreshProjects, refreshProjectData, clearCurrentProjectId, projectFiles, setProjectFiles, refreshProjectFiles, logout }}>
             {children}
         </ApplicationContext.Provider>
     );
