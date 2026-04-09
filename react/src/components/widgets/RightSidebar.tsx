@@ -32,10 +32,14 @@ export interface RightSidebarHandle {
 const  RightSidebar = React.forwardRef<RightSidebarHandle, RightSidebarProps>((props, ref) => {
   const { content, tags, links, allFiles, onFileSelect, activeFileId, handleRestore } = props;
   const [history, setHistory] = useState<any[]>([]);
-  const { projectData } = useApplication();
+  const { projectData, userData } = useApplication(); 
   const [openShareDialog, setOpenShareDialog] = useState(false);
 
   const loadHistory = async () => {
+      if (!userData || userData.email === 'Без регистрации') {
+         setHistory([]);  
+         return;
+      }
       const data = await $api.get(`/files/${activeFileId}/history`);
       setHistory(data.data);
   };

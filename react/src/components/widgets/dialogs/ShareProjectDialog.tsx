@@ -48,18 +48,16 @@ export default function ShareProjectDialog({ open, onClose, projectData }: Share
         if (!inviteEmail || !currentProjectKey) return;
         try {
             const friend = await UserService.searchUser(inviteEmail);
-            const rawKey = await window.crypto.subtle.exportKey("raw", currentProjectKey);
             const friendPubKey = await DCrypto.importExchangePublicKey(friend.exchangePublicKey);
 
-            const encryptedKeyBuffer = await window.crypto.subtle.encrypt(
-                { name: "RSA-OAEP" },
-                friendPubKey,
-                rawKey
-            );
+            const rawKeyBase64 = await DCrypto.exportProjectKey(currentProjectKey);
+            const rawKeyBuffer = DCrypto.base64ToBuffer(rawKeyBase64);
+
+            const encryptedKeyBase64 = await DCrypto.encryptWithRSA(friendPubKey, rawKeyBuffer);
 
             await ProjectService.addMember(projectData.id, {
                 userEmail: inviteEmail,
-                encryptedProjectKey: DCrypto.bufferToBase64(encryptedKeyBuffer),
+                encryptedProjectKey: encryptedKeyBase64,
                 iv: "RSA",
                 role: inviteRole
             });

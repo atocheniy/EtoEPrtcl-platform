@@ -67,7 +67,9 @@ const ApplicationContext = createContext<ApplicationContextType | null>(null);
 
 export const ApplicationProvider = ({ children }: { children: React.ReactNode }) => {
     const [masterKey, setMasterKey] = useState<CryptoKey | null>(null);
+
     const [signingKey, setSigningKey] = useState<CryptoKey | null>(null);
+
     const [exchangeKey, setExchangeKey] = useState<CryptoKey | null>(null);
     const [currentProjectKey, setCurrentProjectKey] = useState<CryptoKey | null>(null);
     
@@ -126,24 +128,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
             const myExchangePrivateKey = await DCrypto.loadKeyFromStorage("exchange_private_key");
             const decryptedProjects = await Promise.all(data.map(async (p: any) => {
                 try {
-                    let rawProjectKeyBase64: string;
-
-                    if (p.keyIv === "RSA" || p.KeyIv === "RSA") {
-                    if (!myExchangePrivateKey) throw new Error("RSA key missing");
-                        rawProjectKeyBase64 = await DCrypto.unwrapProjectKeyWithRSA(
-                            p.encryptedProjectKey || p.EncryptedProjectKey, 
-                            myExchangePrivateKey
-                        );
-                    } else {
-                        rawProjectKeyBase64 = await DCrypto.decrypt(
-                            p.encryptedProjectKey || p.EncryptedProjectKey, 
-                            p.keyIv || p.KeyIv, 
-                            masterKey
-                        );
-                    }
-
-                    const pKey = await DCrypto.importProjectKey(rawProjectKeyBase64);
-
+                    const pKey = await DCrypto.unwrapProjectKey(p, masterKey, myExchangePrivateKey);
                     const clearName = await DCrypto.decrypt(p.name, p.iv, pKey);
                     return { ...p, name: clearName };
                 } catch (e) {
@@ -197,7 +182,7 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
     const clearCurrentProjectId = () => {
         setCurrentProjectId(null);
         setProjectFiles([]);
-        setProjectData({ 
+        setProjectData({    
             id: "123", 
             name: 'Загрузка...', 
             iv: "123", 
@@ -211,40 +196,33 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
     };
 
     useEffect(() => {
+        if (!currentProjectId) {
+            setProjectFiles([]);
+            setCurrentProjectKey(null);
+            return;
+        }
 
         if(currentProjectId){
             ProjectService.getProjectById(currentProjectId).then( async data => {    
                 try {
-                let rawProjectKeyBase64: string;
+                const myExchangePrivateKey = await DCrypto.loadKeyFromStorage("exchange_private_key");
+                const pKey = await DCrypto.unwrapProjectKey(data, masterKey, myExchangePrivateKey); 
 
-                if (masterKey && data.role !== "Viewer" && data.keyIv !== "PUBLIC") { 
-
-                    if (data.keyIv === "RSA") {
-                        const myExchangePrivateKey = await DCrypto.loadKeyFromStorage("exchange_private_key");
-                        if (!myExchangePrivateKey) throw new Error("RSA ключ не найден");
-                        rawProjectKeyBase64 = await DCrypto.unwrapProjectKeyWithRSA(
-                            data.encryptedProjectKey, 
-                            myExchangePrivateKey
-                        );
-                    } else {
-                        rawProjectKeyBase64 = await DCrypto.decrypt(data.encryptedProjectKey, data.keyIv, masterKey);
-                    }
-                } 
-                else if (data.isPublic) {
-                    setUserData({ fullName: "Гость", email: 'Без регистрации', salt: '', orbColor1: 'rgba(100, 100, 100, 0)', orbColor2: 'rgba(100, 100, 100, 0)', theme: ApplicationTheme.Auto, mode: PerformanceMode.On });
+                if (data.isPublic && !masterKey) {
+                    setUserData({ 
+                        fullName: "Гость", 
+                        email: 'Без регистрации', 
+                        salt: '', 
+                        orbColor1: 'rgba(100, 100, 100, 0)', 
+                        orbColor2: 'rgba(100, 100, 100, 0)', 
+                        theme: ApplicationTheme.Auto, 
+                        mode: PerformanceMode.On 
+                    });
                     setOrbColors(['rgba(100, 100, 100, 0)', 'rgba(100, 100, 100, 0)']);
-                    const publicMasterKey = await DCrypto.deriveMasterKey("PUBLIC_ACCESS", data.id);
-                    rawProjectKeyBase64 = await DCrypto.decrypt(data.encryptedProjectKey, data.keyIv, publicMasterKey);
-                } 
-                else {
-                    throw new Error("Нет прав доступа или ключей");
                 }
-
-                const pKey = await DCrypto.importProjectKey(rawProjectKeyBase64);
-                setCurrentProjectKey(pKey);
-
+                setCurrentProjectKey(pKey); 
                 const clearName = await DCrypto.decrypt(data.name, data.iv, pKey);
-
+                
                 setProjectData({
                         id: data.id,      
                         name: clearName,  
@@ -252,13 +230,13 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
                         isPublic: data.isPublic,
                         priority: data.priority,
                         status: data.status,
-                        encryptedProjectKey: data.encryptedProjectKey, 
+                        encryptedProjectKey: data.encryptedProjectKey,                  
                         keyIv: data.keyIv,
                         role: data.role
                     });
 
                 refreshProjectFiles(currentProjectId, pKey);
-            } catch (cryptoErr) {
+            } catch (cryptoErr) {   
                 console.error("ОШИБКА ДЕШИФРОВКИ КЛЮЧА ПРОЕКТА:", cryptoErr);
                 setProjectData(prev => ({ ...prev, name: "Ошибка доступа" }));
             }
@@ -279,20 +257,6 @@ export const ApplicationProvider = ({ children }: { children: React.ReactNode })
             refreshProjects();
         }
     }, [masterKey, signingKey]);
-    
-    /*
-    const initKeys = async (password: string, email: string) => {
-        const mKey = await DCrypto.deriveMasterKey(password, email);
-        setMasterKey(mKey);
-        await DCrypto.saveKeyToStorage(mKey, "master_key");
-
-        const keyPair = await DCrypto.generateSigningKeyPair();
-        setSigningKey(keyPair.privateKey);
-        await DCrypto.saveKeyToStorage(keyPair.privateKey, "signing_key");
-
-        return await DCrypto.exportPublicKey(keyPair.publicKey);
-    };
-    */
 
     const initKeysForRegister = async (password: string): Promise<InitKeysResult> => {
         const salt = await DCrypto.generateUniqueSalt();

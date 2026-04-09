@@ -13,16 +13,6 @@
 
 
     const _base64ToBuffer = (str: string) => Uint8Array.from(atob(str), c => c.charCodeAt(0));
-    /*
-    const bufferToBase64 = (buf: ArrayBuffer | Uint8Array): string => {
-        const uint8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
-        let binary = '';
-        for (let i = 0; i < uint8.byteLength; i++) {
-            binary += String.fromCharCode(uint8[i]);
-        }
-        return window.btoa(binary);
-    };
-    */
     const _bufferToBase64 = (buf: ArrayBuffer | Uint8Array): string => {
         const uint8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
         
@@ -42,25 +32,7 @@
         bufferToBase64: _bufferToBase64,
         base64ToBuffer: _base64ToBuffer,
 
-        async deriveMasterKey(password: string, salt: string): Promise<CryptoKey> {
-            const encoder = new TextEncoder();
-            const baseKey = await window.crypto.subtle.importKey(
-                "raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]
-            );
-
-            return window.crypto.subtle.deriveKey(
-                { 
-                    name: "PBKDF2", 
-                    salt: encoder.encode(salt), 
-                    iterations: 100000, 
-                    hash: "SHA-256" 
-                },
-                baseKey,
-                { name: "AES-GCM", length: 256 },
-                true,
-                ["encrypt", "decrypt"]
-            );
-        },
+        //============Encryption/Decryption===============//
 
         async encrypt(text: string, key: CryptoKey, existingIv?: Uint8Array) {
             const encoder = new TextEncoder();
@@ -88,6 +60,27 @@
             return decoder.decode(decrypted);
         },
 
+        //============RSA Encryption===============//
+
+        async encryptWithRSA(publicKey: CryptoKey, data: ArrayBuffer | Uint8Array): Promise<string> {
+            const encrypted = await window.crypto.subtle.encrypt(
+                { name: "RSA-OAEP" },
+                publicKey,
+                data as BufferSource 
+            );
+            return this.bufferToBase64(encrypted);
+        },
+
+        async decryptWithRSA(privateKey: CryptoKey, encryptedBase64: string): Promise<ArrayBuffer> {
+            return await window.crypto.subtle.decrypt(
+                { name: "RSA-OAEP" },
+                privateKey,
+                this.base64ToBuffer(encryptedBase64)
+            );
+        },
+
+        //============Storage===============//
+
         async saveKeyToStorage(key: CryptoKey, name: string = "master_key") {
             const db = await openDB();
             const tx = db.transaction(STORE_NAME, "readwrite");
@@ -114,6 +107,28 @@
             return new Promise((res) => (tx.oncomplete = res));
         },
 
+        //============Generate Keys===============//
+
+        async deriveMasterKey(password: string, salt: string): Promise<CryptoKey> {
+            const encoder = new TextEncoder();
+            const baseKey = await window.crypto.subtle.importKey(
+                "raw", encoder.encode(password), "PBKDF2", false, ["deriveKey"]
+            );
+
+            return window.crypto.subtle.deriveKey(
+                { 
+                    name: "PBKDF2", 
+                    salt: encoder.encode(salt), 
+                    iterations: 100000, 
+                    hash: "SHA-256" 
+                },
+                baseKey,
+                { name: "AES-GCM", length: 256 },
+                true,
+                ["encrypt", "decrypt"]
+            );
+        },
+
         async generateUniqueSalt(length: number = 16): Promise<string> {
             const array = new Uint8Array(length);
             window.crypto.getRandomValues(array);
@@ -131,6 +146,8 @@
             );
         },
 
+        //============Import|Export===============//
+
         async exportProjectKey(key: CryptoKey): Promise<string> {
             const exported = await window.crypto.subtle.exportKey("raw", key);
             return this.bufferToBase64(exported);
@@ -143,6 +160,8 @@
             );
         },
 
+        //============Projects===============//
+
         async hashTag(tagName: string, salt: string, projectId: string): Promise<string> {
             const encoder = new TextEncoder();
             
@@ -150,6 +169,34 @@
             const data = encoder.encode(tagName.toLowerCase() + salt + projectId);
             const hashBuffer = await window.crypto.subtle.digest("SHA-256", data);
             return _bufferToBase64(hashBuffer);
+        },
+
+        async unwrapProjectKey(data: any, masterKey: CryptoKey | null, exchangePrivateKey: CryptoKey | null): Promise<CryptoKey> {
+            let rawKeyBase64: string;
+            const keyIv = data.keyIv || data.KeyIv;
+            const encKey = data.encryptedProjectKey || data.EncryptedProjectKey;
+
+            if (masterKey && keyIv !== "PUBLIC" && keyIv !== "RSA") 
+            {
+                rawKeyBase64 = await this.decrypt(encKey, keyIv, masterKey);
+            } 
+            else if (keyIv === "RSA") 
+            {
+                if (!exchangePrivateKey) throw new Error("RSA private key missing");
+                rawKeyBase64 = await this.unwrapProjectKeyWithRSA(encKey, exchangePrivateKey);
+            } 
+            else if (keyIv === "PUBLIC"  || data.isPublic)  
+            {
+                const publicMasterKey = await this.deriveMasterKey("PUBLIC_ACCESS", data.id);
+                const decrypted = await this.decrypt(encKey, data.keyIv, publicMasterKey);
+                rawKeyBase64 = decrypted; 
+            } 
+            else 
+            {
+                if (!masterKey) throw new Error("Master key missing");
+                rawKeyBase64 = await this.decrypt(encKey, keyIv, masterKey);
+            }
+            return await this.importProjectKey(rawKeyBase64);
         },
 
         async unwrapProjectKeyWithRSA(wrappedKeyBase64: string, privateKey: CryptoKey): Promise<string> {

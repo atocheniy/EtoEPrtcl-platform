@@ -26,7 +26,7 @@ interface ElementContextMenuProps
 }
 
 function ElementContextMenu({ menuFile, selectedId, closeFile, setMenuFile, handleFileMenuClose, fileMenuAnchorEl, handleOpenRename, setCreateParentId, setIsCreatingFolder, setOpenDialog }: ElementContextMenuProps) {
-    const { masterKey, currentProjectKey, setProjectFiles } = useApplication();
+    const { currentProjectKey, setProjectFiles } = useApplication();
 
     const handleDeleteFile = async () => {
         if (!menuFile) return;
@@ -45,7 +45,7 @@ function ElementContextMenu({ menuFile, selectedId, closeFile, setMenuFile, hand
     };
 
     const handleDownloadFile = async () => {
-        if (!menuFile || !masterKey || !currentProjectKey) return;
+        if (!menuFile || !currentProjectKey) return;
 
         try {
             const response = await $api.get(`/files/${menuFile.id}`);

@@ -10,27 +10,20 @@ import '../components/css/MainContainer.css'
 import TopPanel from '../components/widgets/TopPanel.tsx';
 import ToolsPanel, { type MarkdownCommand } from '../components/widgets/ToolsPanel.tsx';
 
-//? Functions -------------------------------------
-
-// import type { MarkdownCommand } from '../components/ToolsPanel.tsx';
-
 //? Services -------------------------------------
 
 import { $api } from '../api/axios';
-// import { FileService } from '../services/fileService.ts';
 import { TagsService } from '../services/tagsService.ts';
 
 //? Animations -------------------------------------
 
 import AnimatedPage from '../components/motion/AnimatedPage.tsx'; 
-// import { motion } from 'framer-motion';
 import { DCrypto } from '../services/cryptoService.ts';
 import { useApplication } from '../components/context/ApplicationContext.tsx';
-
 import { AnimatePresence, motion } from 'framer-motion';
 import { Box } from '@mui/material';
 
-    const MotionBox = motion.create(Box);
+const MotionBox = motion.create(Box);
 
 //* =============================================================================
 //* Main container application
@@ -38,7 +31,6 @@ import { Box } from '@mui/material';
 function MainContainer() {
 
     //! === States ===
-    // const MotionPaper = motion.div;
     const [currentFileTags, setCurrentFileTags] = useState<string[]>([]);
     const [currentFileLinks, setCurrentFileLinks] = useState<string[]>([]);
 
@@ -46,7 +38,6 @@ function MainContainer() {
     const [fileContent, setFileContent] = useState<string>('');
     const [fileName, setFileName] = useState<string>('');
     const [activeFileId, setActiveFileId] = useState<string | null>(null);
-    // const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
     const [isProjectSidebarOpen, setIsProjectSidebarOpen] = useState(true);
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const { masterKey, setMasterKey } = useApplication(); 
@@ -55,19 +46,15 @@ function MainContainer() {
     const [isFileLoading, setIsFileLoading] = useState(false);
     const [isWorkingWithPreview, setIsWorkingWithPreview] = useState(false);
     const [isProjectSettinsOpen, setIsProjectSettinsOpen] = useState(false);
-
     const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
-
     const showSkeleton = (isPending || manualLoading || isFileLoading) && (isPreviewMode || isWorkingWithPreview);
-
     const { currentProjectKey } = useApplication();
     const { userData } = useApplication();
     const { signingKey, setSigningKey } = useApplication();
-     const { orbColors, refreshCurrentProjectId } = useApplication();
-     const { clearCurrentProjectId } = useApplication();
-     const { projectFiles, setProjectFiles } = useApplication();
-
+    const { orbColors, refreshCurrentProjectId } = useApplication();
+    const { clearCurrentProjectId } = useApplication();
+    const { projectFiles, setProjectFiles } = useApplication();
     const { projectData } = useApplication();
     const canEdit = projectData.role === 'Owner' || projectData.role === 'Editor';
 
@@ -121,25 +108,15 @@ function MainContainer() {
         try {
 
             const { tags, linkedFileIds } = await TagsService.extractMetadata(contentToSave, projectFiles, currentProjectKey, userData.salt, projectData.id);
-            const newIvRaw = window.crypto.getRandomValues(new Uint8Array(12));
-            
-            const encoder = new TextEncoder();
-            const encryptedContent = await window.crypto.subtle.encrypt(
-                { name: "AES-GCM", iv: newIvRaw },
-                currentProjectKey,
-                encoder.encode(contentToSave)
-            );
 
-            const encryptedName = await window.crypto.subtle.encrypt(
-                { name: "AES-GCM", iv: newIvRaw },
-                currentProjectKey,
-                encoder.encode(nameToSave)
-            );
+            const encName = await DCrypto.encrypt(nameToSave, currentProjectKey);
+            const ivForContent = DCrypto.base64ToBuffer(encName.iv);
+            const encContent = await DCrypto.encrypt(contentToSave, currentProjectKey, ivForContent);
 
             const payload = {
-                name: DCrypto.bufferToBase64(encryptedName),
-                content: DCrypto.bufferToBase64(encryptedContent),
-                iv: DCrypto.bufferToBase64(newIvRaw),
+                name: encName.content,
+                content: encContent.content,    
+                iv: encName.iv,
                 tags: tags,
                 linkedFileIds: linkedFileIds
             };
